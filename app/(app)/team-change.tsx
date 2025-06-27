@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Users, Plus, LogOut, Check, Mail, X, CheckSquare, Square } from 'lucide-react-native';
+import { ArrowLeft, Users, Plus, LogOut, Check, Mail, X, SquareCheck as CheckSquare, Square } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
 
