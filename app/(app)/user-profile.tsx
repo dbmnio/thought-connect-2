@@ -11,22 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Bell, 
-  Shield, 
-  HelpCircle, 
-  LogOut,
-  Edit3,
-  Save,
-  Camera,
-  Settings,
-  Moon,
-  Globe,
-  Smartphone
-} from 'lucide-react-native';
+import { ArrowLeft, User, Mail, Bell, Shield, CircleHelp as HelpCircle, LogOut, CreditCard as Edit3, Save, Camera, Settings, Moon, Globe, Smartphone } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/ui/Avatar';
