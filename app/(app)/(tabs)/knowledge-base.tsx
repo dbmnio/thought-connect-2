@@ -120,6 +120,25 @@ export default function KnowledgeBase() {
     }, 500);
   };
 
+  const handleSubmit = () => {
+    if (mode === 'chat') {
+      handleSend();
+    } else {
+      handleSearch(inputText);
+      setSearchQuery(inputText);
+    }
+  };
+
+  const toggleMode = () => {
+    const newMode = mode === 'chat' ? 'search' : 'chat';
+    setMode(newMode);
+    setInputText('');
+    if (newMode === 'search') {
+      setSearchResults([]);
+      setSearchQuery('');
+    }
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
@@ -199,138 +218,75 @@ export default function KnowledgeBase() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Mode Toggle */}
-      <View style={styles.toggleContainer}>
-        <View style={styles.toggleWrapper}>
-          <TouchableOpacity
-            style={[styles.toggleButton, mode === 'chat' && styles.toggleButtonActive]}
-            onPress={() => setMode('chat')}
-          >
-            <Bot color={mode === 'chat' ? '#FFFFFF' : '#6B7280'} size={16} />
-            <Text style={[styles.toggleText, mode === 'chat' && styles.toggleTextActive]}>
-              AI Chat
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleButton, mode === 'search' && styles.toggleButtonActive]}
-            onPress={() => setMode('search')}
-          >
-            <Search color={mode === 'search' ? '#FFFFFF' : '#6B7280'} size={16} />
-            <Text style={[styles.toggleText, mode === 'search' && styles.toggleTextActive]}>
-              Search RAG
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
       {mode === 'chat' ? (
         // Chat Mode
-        <>
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.messagesContainer}
-            contentContainerStyle={styles.messagesContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {messages.map((message) => (
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.messagesContainer}
+          contentContainerStyle={styles.messagesContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {messages.map((message) => (
+            <View
+              key={message.id}
+              style={[
+                styles.messageContainer,
+                message.isUser ? styles.userMessage : styles.aiMessage,
+              ]}
+            >
+              <View style={styles.messageHeader}>
+                <View style={styles.messageAvatar}>
+                  {message.isUser ? (
+                    <User color="#FFFFFF" size={16} />
+                  ) : (
+                    <Bot color="#FFFFFF" size={16} />
+                  )}
+                </View>
+                <Text style={styles.messageTime}>
+                  {formatTime(message.timestamp)}
+                </Text>
+              </View>
               <View
-                key={message.id}
                 style={[
-                  styles.messageContainer,
-                  message.isUser ? styles.userMessage : styles.aiMessage,
+                  styles.messageBubble,
+                  message.isUser ? styles.userBubble : styles.aiBubble,
                 ]}
               >
-                <View style={styles.messageHeader}>
-                  <View style={styles.messageAvatar}>
-                    {message.isUser ? (
-                      <User color="#FFFFFF" size={16} />
-                    ) : (
-                      <Bot color="#FFFFFF" size={16} />
-                    )}
-                  </View>
-                  <Text style={styles.messageTime}>
-                    {formatTime(message.timestamp)}
-                  </Text>
-                </View>
-                <View
+                <Text
                   style={[
-                    styles.messageBubble,
-                    message.isUser ? styles.userBubble : styles.aiBubble,
+                    styles.messageText,
+                    message.isUser ? styles.userText : styles.aiText,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.messageText,
-                      message.isUser ? styles.userText : styles.aiText,
-                    ]}
-                  >
-                    {message.text}
-                  </Text>
+                  {message.text}
+                </Text>
+              </View>
+            </View>
+          ))}
+          
+          {loading && (
+            <View style={[styles.messageContainer, styles.aiMessage]}>
+              <View style={styles.messageHeader}>
+                <View style={styles.messageAvatar}>
+                  <Bot color="#FFFFFF" size={16} />
+                </View>
+                <Text style={styles.messageTime}>Now</Text>
+              </View>
+              <View style={[styles.messageBubble, styles.aiBubble]}>
+                <View style={styles.typingIndicator}>
+                  <View style={styles.typingDot} />
+                  <View style={styles.typingDot} />
+                  <View style={styles.typingDot} />
                 </View>
               </View>
-            ))}
-            
-            {loading && (
-              <View style={[styles.messageContainer, styles.aiMessage]}>
-                <View style={styles.messageHeader}>
-                  <View style={styles.messageAvatar}>
-                    <Bot color="#FFFFFF" size={16} />
-                  </View>
-                  <Text style={styles.messageTime}>Now</Text>
-                </View>
-                <View style={[styles.messageBubble, styles.aiBubble]}>
-                  <View style={styles.typingIndicator}>
-                    <View style={styles.typingDot} />
-                    <View style={styles.typingDot} />
-                    <View style={styles.typingDot} />
-                  </View>
-                </View>
-              </View>
-            )}
-          </ScrollView>
-
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Ask me anything..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity
-              style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-              onPress={handleSend}
-              disabled={!inputText.trim() || loading}
-            >
-              <LinearGradient
-                colors={inputText.trim() ? ['#6366F1', '#3B82F6'] : ['#E5E7EB', '#E5E7EB']}
-                style={styles.sendButtonGradient}
-              >
-                <Send color="#FFFFFF" size={20} />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </>
+            </View>
+          )}
+        </ScrollView>
       ) : (
         // Search Mode
         <>
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputContainer}>
-              <Search color="#9CA3AF" size={20} />
-              <TextInput
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={(text) => {
-                  setSearchQuery(text);
-                  handleSearch(text);
-                }}
-                placeholder="Search your knowledge base..."
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-            
+          <View style={styles.searchHeader}>
+            <Text style={styles.searchTitle}>Search Knowledge Base</Text>
             {searchQuery && (
               <Text style={styles.searchResultsCount}>
                 {searchLoading ? 'Searching...' : `${searchResults.length} results found`}
@@ -372,6 +328,57 @@ export default function KnowledgeBase() {
           />
         </>
       )}
+
+      {/* Input Container with Toggle Button */}
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.textInput}
+          value={inputText}
+          onChangeText={setInputText}
+          placeholder={mode === 'chat' ? 'Ask me anything...' : 'Search your knowledge base...'}
+          placeholderTextColor="#9CA3AF"
+          multiline={mode === 'chat'}
+          maxLength={500}
+        />
+        
+        {/* Mode Toggle Button */}
+        <TouchableOpacity
+          style={styles.toggleButton}
+          onPress={toggleMode}
+        >
+          <View style={[styles.toggleButtonInner, mode === 'search' && styles.toggleButtonSearch]}>
+            {mode === 'chat' ? (
+              <Bot color="#6366F1" size={20} />
+            ) : (
+              <Search color="#F59E0B" size={20} />
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={!inputText.trim() || loading || searchLoading}
+        >
+          <LinearGradient
+            colors={
+              inputText.trim() 
+                ? mode === 'chat' 
+                  ? ['#6366F1', '#3B82F6'] 
+                  : ['#F59E0B', '#D97706']
+                : ['#E5E7EB', '#E5E7EB']
+            }
+            style={styles.sendButtonGradient}
+          >
+            {mode === 'chat' ? (
+              <Send color="#FFFFFF" size={20} />
+            ) : (
+              <Search color="#FFFFFF" size={20} />
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -380,40 +387,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-  },
-  toggleContainer: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  toggleWrapper: {
-    flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 4,
-  },
-  toggleButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 8,
-  },
-  toggleButtonActive: {
-    backgroundColor: '#6366F1',
-  },
-  toggleText: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#6B7280',
-  },
-  toggleTextActive: {
-    color: '#FFFFFF',
   },
   messagesContainer: {
     flex: 1,
@@ -488,68 +461,23 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#9CA3AF',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    gap: 12,
-  },
-  textInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#1F2937',
-    maxHeight: 100,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  sendButtonGradient: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchContainer: {
+  searchHeader: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
+  searchTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
     color: '#1F2937',
+    marginBottom: 4,
   },
   searchResultsCount: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
-    marginTop: 12,
   },
   searchResultsList: {
     flex: 1,
@@ -644,5 +572,60 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     maxWidth: 280,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    gap: 8,
+  },
+  textInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#1F2937',
+    maxHeight: 100,
+  },
+  toggleButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toggleButtonInner: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#DBEAFE',
+  },
+  toggleButtonSearch: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FED7AA',
+  },
+  sendButton: {
+    width: 44,
+    height: 44,
+  },
+  sendButtonDisabled: {
+    opacity: 0.5,
+  },
+  sendButtonGradient: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
