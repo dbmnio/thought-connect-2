@@ -11,7 +11,7 @@ export default function AppEntry() {
   useEffect(() => {
     if (!loading) {
       if (session) {
-        router.replace('/(app)/(tabs)');
+        router.replace('/(app)/(tabs)/camera');
       } else {
         router.replace('/(auth)/sign-in');
       }

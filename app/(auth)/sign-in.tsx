@@ -34,7 +34,7 @@ export default function SignIn() {
     
     try {
       await signIn(email, password);
-      router.replace('/(tabs)');
+      router.replace('/(app)/(tabs)/camera');
     } catch (error: any) {
       setError(error.message || 'Invalid email or password');
     } finally {

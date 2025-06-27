@@ -47,7 +47,7 @@ export default function SignUp() {
     
     try {
       await signUp(email, password, name);
-      router.replace('/(tabs)');
+      router.replace('/(app)/(tabs)/camera');
     } catch (error: any) {
       setError(error.message || 'Failed to create account');
     } finally {
