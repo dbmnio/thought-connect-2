@@ -5,7 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { Users, MoveVertical as MoreVertical, Crown, Clock } from 'lucide-react-native';
+import { Users, MoveVertical as MoreVertical, Crown, Clock, Settings } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Database } from '@/types/database';
@@ -29,6 +30,8 @@ interface TeamCardProps {
 }
 
 export function TeamCard({ team, onPress, onMenuPress, isSelected = false }: TeamCardProps) {
+  const router = useRouter();
+
   const getStatusBadge = () => {
     if (team.invitation_status === 'pending') {
       return <Badge variant="warning" size="small">Invited</Badge>;
@@ -47,6 +50,11 @@ export function TeamCard({ team, onPress, onMenuPress, isSelected = false }: Tea
       return <Clock color="#F59E0B" size={16} />;
     }
     return <Users color="#6366F1" size={16} />;
+  };
+
+  const handleSettingsPress = (e: any) => {
+    e.stopPropagation();
+    router.push(`/(app)/team-settings/${team.id}`);
   };
 
   return (
@@ -114,13 +122,24 @@ export function TeamCard({ team, onPress, onMenuPress, isSelected = false }: Tea
 
         <View style={styles.actions}>
           {getStatusBadge()}
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={onMenuPress}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <MoreVertical color="#9CA3AF" size={20} />
-          </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            {(team.user_role === 'owner' || team.invitation_status === 'accepted') && (
+              <TouchableOpacity
+                style={styles.settingsButton}
+                onPress={handleSettingsPress}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Settings color="#6366F1" size={16} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={onMenuPress}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <MoreVertical color="#9CA3AF" size={20} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -232,6 +251,18 @@ const styles = StyleSheet.create({
   actions: {
     alignItems: 'flex-end',
     gap: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  settingsButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F0F9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuButton: {
     width: 32,
