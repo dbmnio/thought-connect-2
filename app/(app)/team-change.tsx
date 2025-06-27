@@ -408,6 +408,17 @@ export default function TeamChange() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        
+        {/* Create Team Button */}
+        <TouchableOpacity
+          style={styles.createTeamButton}
+          onPress={() => setShowCreateModal(true)}
+        >
+          <LinearGradient colors={['#6366F1', '#3B82F6']} style={styles.createTeamGradient}>
+            <Plus color="#FFFFFF" size={20} />
+            <Text style={styles.createTeamText}>Create New Team</Text>
+          </LinearGradient>
+        </TouchableOpacity>
 
         {/* Error Display */}
         {error && (
@@ -457,16 +468,7 @@ export default function TeamChange() {
         {/* Tab Content */}
         {getTabContent()}
 
-        {/* Create Team Button */}
-        <TouchableOpacity
-          style={styles.createTeamButton}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <LinearGradient colors={['#6366F1', '#3B82F6']} style={styles.createTeamGradient}>
-            <Plus color="#FFFFFF" size={20} />
-            <Text style={styles.createTeamText}>Create New Team</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+
       </ScrollView>
 
       {/* Create Team Modal */}
