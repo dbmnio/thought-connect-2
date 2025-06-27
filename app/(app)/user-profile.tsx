@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, User, Mail, Bell, Shield, CircleHelp as HelpCircle, LogOut, CreditCard as Edit3, Save, Camera, Settings, Moon, Globe, Smartphone } from 'lucide-react-native';
+import { ArrowLeft, User, Mail, Bell, Shield, CircleHelp as HelpCircle, LogOut, CreditCard as Edit3, Save, Camera, Settings, Moon, Globe, Smartphone, Users } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/ui/Avatar';
@@ -212,6 +212,36 @@ export default function UserProfile() {
               </>
             )}
           </View>
+        </View>
+
+        {/* Team Management Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Teams</Text>
+          
+          <TouchableOpacity
+            style={styles.teamManagementButton}
+            onPress={() => router.push('/(app)/team-change')}
+            activeOpacity={0.7}
+          >
+            <LinearGradient colors={['#6366F1', '#3B82F6']} style={styles.teamManagementGradient}>
+              <View style={styles.teamManagementContent}>
+                <View style={styles.teamManagementLeft}>
+                  <View style={styles.teamManagementIcon}>
+                    <Users color="#FFFFFF" size={24} />
+                  </View>
+                  <View style={styles.teamManagementText}>
+                    <Text style={styles.teamManagementTitle}>Manage Teams</Text>
+                    <Text style={styles.teamManagementSubtitle}>
+                      Create, join, and manage your teams
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.teamManagementArrow}>
+                  <Text style={styles.teamManagementArrowText}>›</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         {/* Settings Section */}
@@ -420,6 +450,60 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     color: '#1F2937',
     marginBottom: 16,
+  },
+  teamManagementButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  teamManagementGradient: {
+    padding: 20,
+  },
+  teamManagementContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  teamManagementLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  teamManagementIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  teamManagementText: {
+    flex: 1,
+  },
+  teamManagementTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  teamManagementSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 20,
+  },
+  teamManagementArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  teamManagementArrowText: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
   },
   settingItem: {
     flexDirection: 'row',
