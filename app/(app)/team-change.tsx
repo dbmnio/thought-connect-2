@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Users, Plus, LogOut, Check, Mail, X, SquareCheck as CheckSquare, Square } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TeamChange() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function TeamChange() {
     isTeamSelected, 
     createTeam 
   } = useTeam();
+  const insets = useSafeAreaInsets();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [teamName, setTeamName] = useState('');
@@ -101,7 +103,7 @@ export default function TeamChange() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -215,7 +217,7 @@ export default function TeamChange() {
         presentationStyle="pageSheet"
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top + 16 }]}>
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => {
@@ -308,8 +310,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingTop: 60,
+    paddingBottom: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -495,10 +496,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-    paddingTop: 60,
   },
   modalCloseButton: {
     width: 40,

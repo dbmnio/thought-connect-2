@@ -1,12 +1,14 @@
 import { Tabs } from 'expo-router';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Brain, Camera, MessageSquare, Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTeam } from '@/hooks/useTeam';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function TabHeader() {
   const router = useRouter();
   const { selectedTeams } = useTeam();
+  const insets = useSafeAreaInsets();
 
   const getDisplayText = () => {
     if (selectedTeams.length === 0) return 'No Teams';
@@ -16,7 +18,7 @@ function TabHeader() {
   };
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
       <View style={styles.headerContent}>
         <Text style={styles.logo}>ThoughtSpace</Text>
         <TouchableOpacity
@@ -93,7 +95,6 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
-    paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,

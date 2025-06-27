@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Check, CircleHelp as HelpCircle, MessageSquare, FileText, ChevronDown } from 'lucide-react-native';
 import { useThoughts } from '@/hooks/useThoughts';
 import { useTeam } from '@/hooks/useTeam';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -29,6 +30,7 @@ export default function PhotoEditor() {
   const [error, setError] = useState<string | null>(null);
   const { createThought } = useThoughts();
   const { selectedTeams } = useTeam();
+  const insets = useSafeAreaInsets();
 
   const getTypeInfo = () => {
     switch (thoughtType) {
@@ -108,7 +110,7 @@ export default function PhotoEditor() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -220,7 +222,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 16,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
