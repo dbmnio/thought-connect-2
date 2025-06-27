@@ -114,11 +114,11 @@ export default function PhotoEditor() {
 
         {/* Team Display */}
         <View style={styles.teamButton}>
-          <Users color="#6366F1" size={16} />
+          <Users color="#6366F1" size={14} />
           <Text style={styles.teamText} numberOfLines={1}>
             {getDisplayText()}
           </Text>
-          <ChevronDown color="#6366F1" size={14} />
+          <ChevronDown color="#6366F1" size={12} />
         </View>
       </View>
 
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     position: 'absolute',
     top: 0,
     left: 0,
@@ -183,12 +183,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   headerTitle: {
     fontSize: 18,
@@ -198,15 +200,17 @@ const styles = StyleSheet.create({
   teamButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(248, 250, 252, 0.9)',
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 16,
     gap: 4,
-    maxWidth: 140,
+    maxWidth: 120,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   teamText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#6366F1',
     flex: 1,

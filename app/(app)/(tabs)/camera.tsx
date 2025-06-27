@@ -76,7 +76,7 @@ export default function Camera() {
         <View style={styles.headerControls}>
           <View style={styles.headerLeft} />
           <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
-            <RotateCcw color="#FFFFFF" size={24} />
+            <RotateCcw color="#FFFFFF" size={20} />
           </TouchableOpacity>
         </View>
 
@@ -84,12 +84,9 @@ export default function Camera() {
         <View style={styles.bottomControls}>
           <View style={styles.captureContainer}>
             <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-              <LinearGradient
-                colors={['#6366F1', '#3B82F6']}
-                style={styles.captureButtonGradient}
-              >
+              <View style={styles.captureButtonOuter}>
                 <View style={styles.captureButtonInner} />
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -157,18 +154,15 @@ const styles = StyleSheet.create({
   headerLeft: {
     width: 40,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
-  },
   flipButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   bottomControls: {
     position: 'absolute',
@@ -185,18 +179,20 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
   },
-  captureButtonGradient: {
+  captureButtonOuter: {
     width: 80,
     height: 80,
     borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 4,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   captureButtonInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#2222222',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
 });

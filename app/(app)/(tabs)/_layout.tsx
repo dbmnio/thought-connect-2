@@ -46,11 +46,11 @@ function TabHeader() {
           onPress={() => router.push('/(app)/team-change')}
           activeOpacity={0.7}
         >
-          <Users color="#6366F1" size={16} />
+          <Users color="#6366F1" size={14} />
           <Text style={styles.teamText} numberOfLines={1}>
             {getDisplayText()}
           </Text>
-          <ChevronDown color="#6366F1" size={14} />
+          <ChevronDown color="#6366F1" size={12} />
         </TouchableOpacity>
       </View>
     </View>
@@ -129,13 +129,15 @@ const styles = StyleSheet.create({
   profileButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: 'rgba(248, 250, 252, 0.8)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 10,
     flex: 1,
     maxWidth: 180,
+    borderWidth: 1,
+    borderColor: 'rgba(229, 231, 235, 0.6)',
   },
   profileInfo: {
     flex: 1,
@@ -155,15 +157,17 @@ const styles = StyleSheet.create({
   teamButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(248, 250, 252, 0.8)',
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 16,
     gap: 4,
-    maxWidth: 180,
+    maxWidth: 140,
+    borderWidth: 1,
+    borderColor: 'rgba(229, 231, 235, 0.6)',
   },
   teamText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#6366F1',
     flex: 1,
