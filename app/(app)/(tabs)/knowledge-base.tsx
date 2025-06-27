@@ -211,7 +211,6 @@ export default function KnowledgeBase() {
               AI Chat
             </Text>
           </TouchableOpacity>
-          
           <TouchableOpacity
             style={[styles.toggleButton, mode === 'search' && styles.toggleButtonActive]}
             onPress={() => setMode('search')}
