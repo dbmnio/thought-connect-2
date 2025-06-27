@@ -268,6 +268,32 @@ export default function UserProfile() {
               </View>
             </LinearGradient>
           </TouchableOpacity>
+
+          {/* Invitations sub-section */}
+          <TouchableOpacity
+            style={styles.teamManagementButton}
+            onPress={() => router.push('/(app)/stub')}
+            activeOpacity={0.7}
+          >
+            <LinearGradient colors={['#EF4444', '#EF4444']} style={styles.teamManagementGradient}>
+              <View style={styles.teamManagementContent}>
+                <View style={styles.teamManagementLeft}>
+                  <View style={styles.teamManagementIcon}>
+                    <Users color="#FFFFFF" size={24} />
+                  </View>
+                  <View style={styles.teamManagementText}>
+                    <Text style={styles.teamManagementTitle}>Invitations</Text>
+                    <Text style={styles.teamManagementSubtitle}>
+                      Join a team
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.teamManagementArrow}>
+                  <Text style={styles.teamManagementArrowText}>›</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
 
