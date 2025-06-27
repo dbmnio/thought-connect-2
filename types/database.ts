@@ -31,6 +31,9 @@ export interface Database {
         Row: {
           id: string;
           name: string;
+          description: string | null;
+          avatar_url: string | null;
+          member_limit: number;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -38,6 +41,9 @@ export interface Database {
         Insert: {
           id?: string;
           name: string;
+          description?: string | null;
+          avatar_url?: string | null;
+          member_limit?: number;
           created_by: string;
           created_at?: string;
           updated_at?: string;
@@ -45,6 +51,9 @@ export interface Database {
         Update: {
           id?: string;
           name?: string;
+          description?: string | null;
+          avatar_url?: string | null;
+          member_limit?: number;
           created_by?: string;
           created_at?: string;
           updated_at?: string;
@@ -56,6 +65,7 @@ export interface Database {
           team_id: string;
           user_id: string;
           role: 'owner' | 'member';
+          invitation_status: 'pending' | 'accepted' | 'declined';
           joined_at: string;
         };
         Insert: {
@@ -63,6 +73,7 @@ export interface Database {
           team_id: string;
           user_id: string;
           role?: 'owner' | 'member';
+          invitation_status?: 'pending' | 'accepted' | 'declined';
           joined_at?: string;
         };
         Update: {
@@ -70,6 +81,7 @@ export interface Database {
           team_id?: string;
           user_id?: string;
           role?: 'owner' | 'member';
+          invitation_status?: 'pending' | 'accepted' | 'declined';
           joined_at?: string;
         };
       };
