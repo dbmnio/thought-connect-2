@@ -12,6 +12,7 @@ export type Thought = {
   author_full_name: string;
   team_name: string;
   answer_count: number;
+  similarity?: number;
   // ... other fields
 };
 
