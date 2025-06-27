@@ -8,9 +8,48 @@ type SearchViewProps = {
   searchQuery: string;
   searchResults: SearchResult[];
   isLoading: boolean;
+  error: string | null;
 };
 
-export function SearchView({ searchQuery, searchResults, isLoading }: SearchViewProps) {
+export function SearchView({ searchQuery, searchResults, isLoading, error }: SearchViewProps) {
+  const renderEmptyComponent = () => {
+    if (error) {
+      return (
+        <View style={styles.emptyState}>
+          <Search color="#9CA3AF" size={48} />
+          <Text style={styles.emptyTitle}>Error</Text>
+          <Text style={styles.emptyDescription}>{error}</Text>
+        </View>
+      );
+    }
+
+    if (searchQuery) {
+      return (
+        <View style={styles.emptyState}>
+          <Search color="#9CA3AF" size={48} />
+          <Text style={styles.emptyTitle}>
+            {isLoading ? 'Searching...' : 'No results found'}
+          </Text>
+          <Text style={styles.emptyDescription}>
+            {isLoading
+              ? 'Searching through your knowledge base...'
+              : 'Try adjusting your search terms or check your spelling'}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <Search color="#9CA3AF" size={48} />
+        <Text style={styles.emptyTitle}>Search Your Knowledge</Text>
+        <Text style={styles.emptyDescription}>
+          Enter keywords to search through your thoughts, questions, answers, and documents
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <>
       {searchQuery && (
@@ -27,29 +66,7 @@ export function SearchView({ searchQuery, searchResults, isLoading }: SearchView
         style={styles.searchResultsList}
         contentContainerStyle={styles.searchResultsContent}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          searchQuery ? (
-            <View style={styles.emptyState}>
-              <Search color="#9CA3AF" size={48} />
-              <Text style={styles.emptyTitle}>
-                {isLoading ? 'Searching...' : 'No results found'}
-              </Text>
-              <Text style={styles.emptyDescription}>
-                {isLoading
-                  ? 'Searching through your knowledge base...'
-                  : 'Try adjusting your search terms or check your spelling'}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Search color="#9CA3AF" size={48} />
-              <Text style={styles.emptyTitle}>Search Your Knowledge</Text>
-              <Text style={styles.emptyDescription}>
-                Enter keywords to search through your thoughts, questions, answers, and documents
-              </Text>
-            </View>
-          )
-        }
+        ListEmptyComponent={renderEmptyComponent}
       />
     </>
   );

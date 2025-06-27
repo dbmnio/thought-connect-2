@@ -10,6 +10,11 @@ export function useSearch() {
   const [error, setError] = useState<string | null>(null);
 
   const performSearch = async (query: string) => {
+    if (selectedTeams.length === 0) {
+      setError('Please select at least one team to search.');
+      setSearchResults([]);
+      return;
+    }
     if (!query) {
       setSearchResults([]);
       return;

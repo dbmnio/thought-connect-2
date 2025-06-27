@@ -28,7 +28,7 @@ function formatThoughtAsSearchResult(thought: Thought): SearchResult {
 export default function KnowledgeBase() {
   const { selectedTeams } = useTeam();
   const { fetchThoughts, subscribeToTeamThoughts } = useThoughtStore();
-  const { searchResults: rawSearchResults, isLoading: searchLoading, performSearch } = useSearch();
+  const { searchResults: rawSearchResults, isLoading: searchLoading, performSearch, error: searchError } = useSearch();
 
   useEffect(() => {
     const teamIds = selectedTeams.map((t) => t.id);
@@ -123,6 +123,7 @@ export default function KnowledgeBase() {
             searchQuery={searchQuery}
             searchResults={searchResults}
             isLoading={searchLoading}
+            error={searchError}
           />
         )}
         <InputBar

@@ -21,6 +21,7 @@ serve(async (req) => {
 
   try {
     const { query, teamIds } = await req.json();
+    console.log('request: ', query, JSON.stringify(teamIds));
 
     if (!query || !teamIds || !Array.isArray(teamIds)) {
       return new Response("Missing required parameters: query and teamIds.", { status: 400 });
