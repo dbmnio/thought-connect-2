@@ -116,15 +116,19 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       // Add other members
       for (const email of memberEmails) {
         if (email.trim()) {
-          // Check if user exists
+          // Check if user exists - remove .single() to avoid error when no user found
           const { data: userData, error: userError } = await supabase
             .from('profiles')
             .select('id')
-            .eq('email', email.trim())
-            .single();
+            .eq('email', email.trim());
 
-          if (userError || !userData) {
-            throw new Error(`User with email ${email} not found. Please ask them to sign up first.`);
+          if (userError) {
+            throw new Error(`Error checking user with email ${email}: ${userError.message}`);
+          }
+
+          // Check if user was found
+          if (!userData || userData.length === 0) {
+            throw new Error(`User with email ${email} not found. Please ask them to sign up for the app first before adding them to a team.`);
           }
 
           // Add as member
@@ -132,7 +136,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
             .from('team_members')
             .insert({
               team_id: teamData.id,
-              user_id: userData.id,
+              user_id: userData[0].id,
               role: 'member',
             });
 
