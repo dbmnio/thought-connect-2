@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Check, CircleHelp as HelpCircle, MessageSquare, FileText, ChevronDown } from 'lucide-react-native';
+import { ArrowLeft, Check, CircleHelp as HelpCircle, MessageSquare, FileText } from 'lucide-react-native';
 import { useThoughts } from '@/hooks/useThoughts';
 import { useTeam } from '@/hooks/useTeam';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -88,7 +88,6 @@ export default function PhotoEditor() {
   const getPlaceholders = () => {
     if (!selectedType) return { title: '', description: '' };
     
-    const option = typeOptions.find(opt => opt.type === selectedType);
     switch (selectedType) {
       case 'question':
         return {
@@ -162,151 +161,126 @@ export default function PhotoEditor() {
         </TouchableOpacity>
         
         <Text style={styles.headerTitle}>
-          {selectedType ? selectedOption?.title : 'Choose Type'}
+          {selectedType ? selectedOption?.title : 'Add Details'}
         </Text>
 
-        {selectedType && (
-          <TouchableOpacity
-            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={loading}
-          >
-            <Check color="#FFFFFF" size={24} />
-          </TouchableOpacity>
-        )}
-        
-        {!selectedType && <View style={styles.headerRight} />}
+        <View style={styles.headerRight} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Image Preview */}
         <View style={styles.imageContainer}>
           <Image source={{ uri: imageUri }} style={styles.image} />
-        </View>
-
-        {!selectedType ? (
-          /* Type Selection */
-          <View style={styles.typeSelectionContainer}>
-            <Text style={styles.sectionTitle}>What would you like to create?</Text>
-            <Text style={styles.sectionSubtitle}>
-              Choose the type of content you want to share with your team
-            </Text>
-
-            <View style={styles.typeOptions}>
+          
+          {/* Type Selection Overlay */}
+          <View style={styles.typeSelectionOverlay}>
+            <View style={styles.typeButtonsContainer}>
               {typeOptions.map((option) => {
                 const IconComponent = option.icon;
+                const isSelected = selectedType === option.type;
                 
                 return (
                   <TouchableOpacity
                     key={option.type}
-                    style={styles.typeOption}
+                    style={[
+                      styles.typeIconButton,
+                      isSelected && styles.typeIconButtonSelected,
+                    ]}
                     onPress={() => handleTypeSelect(option.type)}
-                    activeOpacity={0.7}
+                    activeOpacity={0.8}
                   >
                     <LinearGradient
-                      colors={option.gradient}
-                      style={styles.typeOptionGradient}
+                      colors={isSelected ? option.gradient : ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.8)']}
+                      style={styles.typeIconGradient}
                     >
-                      <View style={styles.typeOptionContent}>
-                        <View style={styles.typeOptionIcon}>
-                          <IconComponent color="#FFFFFF" size={32} />
-                        </View>
-                        <View style={styles.typeOptionText}>
-                          <Text style={styles.typeOptionTitle}>{option.title}</Text>
-                          <Text style={styles.typeOptionDescription}>
-                            {option.description}
-                          </Text>
-                        </View>
-                      </View>
+                      <IconComponent 
+                        color={isSelected ? '#FFFFFF' : option.color} 
+                        size={28} 
+                      />
                     </LinearGradient>
                   </TouchableOpacity>
                 );
               })}
             </View>
           </View>
-        ) : (
-          /* Content Form */
-          <View style={styles.formContainer}>
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
+        </View>
+
+        {/* Content Form */}
+        <View style={styles.formContainer}>
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          {/* Team Selection Info */}
+          <View style={styles.teamInfoContainer}>
+            <Text style={styles.teamInfoLabel}>
+              Will be posted to: {selectedTeams.length > 0 ? selectedTeams[0].name : 'No team selected'}
+            </Text>
+            {selectedTeams.length > 1 && (
+              <Text style={styles.teamInfoSubtext}>
+                (First selected team: {selectedTeams[0].name})
+              </Text>
             )}
-
-            {/* Team Selection Info */}
-            <View style={styles.teamInfoContainer}>
-              <Text style={styles.teamInfoLabel}>
-                Will be posted to: {selectedTeams.length > 0 ? selectedTeams[0].name : 'No team selected'}
-              </Text>
-              {selectedTeams.length > 1 && (
-                <Text style={styles.teamInfoSubtext}>
-                  (First selected team: {selectedTeams[0].name})
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Title</Text>
-              <TextInput
-                style={styles.titleInput}
-                value={title}
-                onChangeText={setTitle}
-                placeholder={placeholders.title}
-                placeholderTextColor="#9CA3AF"
-                maxLength={100}
-              />
-              <Text style={styles.characterCount}>
-                {title.length}/100
-              </Text>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Description</Text>
-              <TextInput
-                style={styles.descriptionInput}
-                value={description}
-                onChangeText={setDescription}
-                placeholder={placeholders.description}
-                placeholderTextColor="#9CA3AF"
-                multiline
-                maxLength={500}
-                textAlignVertical="top"
-              />
-              <Text style={styles.characterCount}>
-                {description.length}/500
-              </Text>
-            </View>
-
-            {/* Change Type Button */}
-            <TouchableOpacity
-              style={styles.changeTypeButton}
-              onPress={() => setSelectedType(null)}
-            >
-              <Text style={styles.changeTypeText}>Change Type</Text>
-            </TouchableOpacity>
           </View>
-        )}
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Title</Text>
+            <TextInput
+              style={styles.titleInput}
+              value={title}
+              onChangeText={setTitle}
+              placeholder={placeholders.title}
+              placeholderTextColor="#9CA3AF"
+              maxLength={100}
+            />
+            <Text style={styles.characterCount}>
+              {title.length}/100
+            </Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Description</Text>
+            <TextInput
+              style={styles.descriptionInput}
+              value={description}
+              onChangeText={setDescription}
+              placeholder={placeholders.description}
+              placeholderTextColor="#9CA3AF"
+              multiline
+              maxLength={500}
+              textAlignVertical="top"
+            />
+            <Text style={styles.characterCount}>
+              {description.length}/500
+            </Text>
+          </View>
+        </View>
       </ScrollView>
 
-      {/* Save Button (when type is selected) */}
-      {selectedType && (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-          <TouchableOpacity
-            style={styles.saveButtonLarge}
-            onPress={handleSave}
-            disabled={loading}
+      {/* Save Button */}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+        <TouchableOpacity
+          style={[styles.saveButton, (!selectedType || loading) && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={!selectedType || loading}
+        >
+          <LinearGradient
+            colors={
+              !selectedType || loading 
+                ? ['#E5E7EB', '#D1D5DB'] 
+                : selectedOption?.gradient || ['#6366F1', '#3B82F6']
+            }
+            style={styles.saveButtonGradient}
           >
-            <LinearGradient
-              colors={loading ? ['#9CA3AF', '#9CA3AF'] : selectedOption?.gradient || ['#6366F1', '#3B82F6']}
-              style={styles.saveButtonGradient}
-            >
-              <Text style={styles.saveButtonText}>
-                {loading ? 'Saving...' : `Save ${selectedOption?.title}`}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      )}
+            <Check color="#FFFFFF" size={20} style={{ marginRight: 8 }} />
+            <Text style={styles.saveButtonText}>
+              {loading ? 'Saving...' : selectedType ? `Save ${selectedOption?.title}` : 'Select Type First'}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -337,17 +311,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
-  saveButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
   headerRight: {
     width: 40,
   },
@@ -355,76 +318,49 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   imageContainer: {
-    height: height * 0.4,
+    height: height * 0.5,
     margin: 20,
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
+    position: 'relative',
   },
   image: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
-  typeSelectionContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    marginTop: -24,
-    flex: 1,
+  typeSelectionOverlay: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontFamily: 'Inter-Bold',
-    color: '#1F2937',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
-  },
-  typeOptions: {
+  typeButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: 16,
   },
-  typeOption: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  typeOptionGradient: {
-    padding: 24,
-  },
-  typeOptionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  typeOptionIcon: {
+  typeIconButton: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  typeIconButtonSelected: {
+    transform: [{ scale: 1.1 }],
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+  },
+  typeIconGradient: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 20,
-  },
-  typeOptionText: {
-    flex: 1,
-  },
-  typeOptionTitle: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  typeOptionDescription: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 22,
   },
   formContainer: {
     backgroundColor: '#FFFFFF',
@@ -452,7 +388,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F9FF',
     borderRadius: 12,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#E0F2FE',
   },
@@ -468,7 +404,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   inputLabel: {
     fontSize: 16,
@@ -481,54 +417,50 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#1F2937',
+    backgroundColor: '#FAFAFA',
   },
   descriptionInput: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#1F2937',
-    height: 100,
+    height: 120,
+    backgroundColor: '#FAFAFA',
   },
   characterCount: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#9CA3AF',
     textAlign: 'right',
-    marginTop: 4,
-  },
-  changeTypeButton: {
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 20,
-    marginTop: 8,
-  },
-  changeTypeText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: '#6B7280',
+    marginTop: 6,
   },
   footer: {
     backgroundColor: '#FFFFFF',
     padding: 20,
     paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
-  saveButtonLarge: {
+  saveButton: {
     width: '100%',
   },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
   saveButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 16,
-    alignItems: 'center',
   },
   saveButtonText: {
     fontSize: 18,
