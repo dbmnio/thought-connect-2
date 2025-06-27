@@ -37,14 +37,14 @@ export default function TabLayout() {
             backgroundColor: '#FFFFFF',
             borderTopWidth: 1,
             borderTopColor: '#F3F4F6',
-            paddingBottom: 8,
-            paddingTop: 8,
-            height: 80,
+            paddingBottom: 4, // Reduced from 8
+            paddingTop: 4,    // Reduced from 8
+            height: 60,       // Reduced from 80
           },
           tabBarLabelStyle: {
-            fontSize: 12,
+            fontSize: 11,     // Slightly smaller
             fontFamily: 'Inter-Medium',
-            marginTop: 4,
+            marginTop: 2,     // Reduced from 4
           },
         }}
       >
@@ -53,7 +53,7 @@ export default function TabLayout() {
           options={{
             title: 'Knowledge',
             tabBarIcon: ({ color, size }) => (
-              <Brain color={color} size={size} />
+              <Brain color={color} size={20} />  // Slightly smaller icons
             ),
           }}
         />
@@ -62,7 +62,7 @@ export default function TabLayout() {
           options={{
             title: 'Camera',
             tabBarIcon: ({ color, size }) => (
-              <Camera color={color} size={size} />
+              <Camera color={color} size={20} />
             ),
           }}
         />
@@ -71,7 +71,7 @@ export default function TabLayout() {
           options={{
             title: 'Thoughts',
             tabBarIcon: ({ color, size }) => (
-              <MessageSquare color={color} size={size} />
+              <MessageSquare color={color} size={20} />
             ),
           }}
         />
@@ -83,7 +83,7 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
-    paddingTop: 16, // Significantly reduced from 44
+    paddingTop: 16,
     paddingBottom: 8,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
