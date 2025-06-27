@@ -3,11 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import { Brain, Camera, MessageSquare, Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTeam } from '@/hooks/useTeam';
+import { useAuth } from '@/hooks/useAuth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '@/components/ui/Avatar';
 
 function TabHeader() {
   const router = useRouter();
   const { selectedTeams } = useTeam();
+  const { profile } = useAuth();
   const insets = useSafeAreaInsets();
 
   const getDisplayText = () => {
@@ -17,13 +20,37 @@ function TabHeader() {
     return `${selectedTeams[0].name} + ${selectedTeams.length - 1} more`;
   };
 
+  const handleProfilePress = () => {
+    router.push('/(app)/user-profile');
+  };
+
   return (
     <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
       <View style={styles.headerContent}>
-        <Text style={styles.logo}>ThoughtSpace</Text>
+        {/* User Profile Button */}
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={handleProfilePress}
+          activeOpacity={0.7}
+        >
+          <Avatar
+            uri={profile?.avatar_url}
+            name={profile?.full_name || 'User'}
+            size="small"
+          />
+          <View style={styles.profileInfo}>
+            <Text style={styles.greeting}>Good morning</Text>
+            <Text style={styles.userName} numberOfLines={1}>
+              {profile?.full_name?.split(' ')[0] || 'User'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Team Selection Button */}
         <TouchableOpacity
           style={styles.teamButton}
           onPress={() => router.push('/(app)/team-change')}
+          activeOpacity={0.7}
         >
           <Users color="#6366F1" size={16} />
           <Text style={styles.teamText} numberOfLines={1}>
@@ -105,10 +132,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  logo: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: '#6366F1',
+  profileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 10,
+    flex: 1,
+    maxWidth: 180,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  greeting: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+    lineHeight: 14,
+  },
+  userName: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1F2937',
+    lineHeight: 18,
   },
   teamButton: {
     flexDirection: 'row',

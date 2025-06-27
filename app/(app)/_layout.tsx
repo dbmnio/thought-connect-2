@@ -9,6 +9,7 @@ export default function AppLayout() {
       <Stack.Screen name="photo-editor" />
       <Stack.Screen name="question-thread/[id]" />
       <Stack.Screen name="answer-view/[id]" />
+      <Stack.Screen name="user-profile" />
     </Stack>
   );
 }
