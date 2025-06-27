@@ -242,11 +242,9 @@ export default function UserProfile() {
               </View>
             </LinearGradient>
           </TouchableOpacity>
-        </View>
 
-        {/* Team create section */}
-        <View>
-        <TouchableOpacity
+          {/* Team create sub-section */}
+          <TouchableOpacity
             style={styles.teamManagementButton}
             onPress={() => router.push('/(app)/stub')}
             activeOpacity={0.7}
@@ -271,6 +269,10 @@ export default function UserProfile() {
             </LinearGradient>
           </TouchableOpacity>
         </View>
+
+
+
+        
 
         {/* Settings Section */}
         <View style={styles.section}>
