@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,17 +10,29 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Search, CircleHelp as HelpCircle, MessageSquare, FileText, Clock, User } from 'lucide-react-native';
-import { useThoughts } from '@/hooks/useThoughts';
+import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 import { useAuth } from '@/hooks/useAuth';
+import { useTeam } from '@/hooks/useTeam';
 
 type FilterType = 'all' | 'my-thoughts' | 'suggested' | 'open';
 
 export default function Thoughts() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const { thoughts, loading } = useThoughts();
+  const { thoughts, loading } = useThoughtStore();
   const { user } = useAuth();
+  const { selectedTeams } = useTeam();
+  const { fetchThoughts, subscribeToTeamThoughts } = useThoughtStore();
   const router = useRouter();
+
+  useEffect(() => {
+    const teamIds = selectedTeams.map(t => t.id);
+    if (teamIds.length > 0) {
+      fetchThoughts(teamIds);
+      const unsubscribe = subscribeToTeamThoughts(teamIds);
+      return () => unsubscribe();
+    }
+  }, [selectedTeams, fetchThoughts, subscribeToTeamThoughts]);
 
   const filters = [
     { key: 'all' as FilterType, label: 'All', icon: MessageSquare },

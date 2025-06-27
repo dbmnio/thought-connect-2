@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -116,6 +117,13 @@ export default function UserProfile() {
       subtitle: 'English (US)',
       type: 'navigation' as const,
       onPress: () => Alert.alert('Coming Soon', 'Language settings will be available soon'),
+    },
+    {
+      icon: Settings,
+      title: 'Developer: Embedding Test',
+      subtitle: 'Test OpenAI embedding generation',
+      type: 'navigation' as const,
+      onPress: () => router.push('/(app)/embedding-test'),
     },
   ];
 
@@ -296,10 +304,6 @@ export default function UserProfile() {
           </TouchableOpacity>
         </View>
 
-
-
-        
-
         {/* Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
@@ -339,11 +343,24 @@ export default function UserProfile() {
           })}
         </View>
 
-        {/* Sign Out Section */}
+        {/* Account Section */}
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
             <LogOut color="#EF4444" size={20} />
             <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Developer Section - For Testing */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Developer</Text>
+          <TouchableOpacity
+            style={styles.devTestButton}
+            onPress={() => router.push('/(app)/embedding-test')}
+          >
+            <Settings color="#6366F1" size={20} />
+            <Text style={styles.devTestButtonText}>Embedding Test</Text>
           </TouchableOpacity>
         </View>
 
@@ -613,17 +630,29 @@ const styles = StyleSheet.create({
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFF1F2',
     borderRadius: 12,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    gap: 8,
   },
   signOutText: {
+    marginLeft: 12,
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
     color: '#EF4444',
+    fontWeight: '600',
+  },
+  devTestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 12,
+  },
+  devTestButtonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#4338CA',
+    fontWeight: '600',
   },
 });

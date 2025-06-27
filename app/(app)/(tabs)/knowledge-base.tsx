@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -13,7 +14,8 @@ import {
 import { Send, Bot, User, Search, MessageSquare, FileText, CircleHelp as HelpCircle, Clock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
-import { useThoughts } from '@/hooks/useThoughts';
+import { useTeam } from '@/hooks/useTeam';
+import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 import { useRouter } from 'expo-router';
 
 interface Message {
@@ -37,8 +39,18 @@ interface SearchResult {
 
 export default function KnowledgeBase() {
   const { profile } = useAuth();
-  const { thoughts } = useThoughts();
+  const { selectedTeams } = useTeam();
+  const { thoughts, fetchThoughts, subscribeToTeamThoughts } = useThoughtStore();
   const router = useRouter();
+  
+  useEffect(() => {
+    const teamIds = selectedTeams.map(t => t.id);
+    if (teamIds.length > 0) {
+      fetchThoughts(teamIds);
+      const unsubscribe = subscribeToTeamThoughts(teamIds);
+      return () => unsubscribe();
+    }
+  }, [selectedTeams, fetchThoughts, subscribeToTeamThoughts]);
   
   // Toggle state
   const [mode, setMode] = useState<'chat' | 'search'>('chat');

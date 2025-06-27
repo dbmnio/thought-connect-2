@@ -11,8 +11,9 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, CircleHelp as HelpCircle, MessageSquare, FileText, Users, ChevronDown } from 'lucide-react-native';
-import { useThoughts } from '@/hooks/useThoughts';
+import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 import { useTeam } from '@/hooks/useTeam';
+import { useAuth } from '@/hooks/useAuth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
@@ -54,8 +55,9 @@ export default function PhotoEditor() {
   }>();
 
   const [loading, setLoading] = useState<ThoughtType | null>(null);
-  const { createThought } = useThoughts();
+  const { createThought } = useThoughtStore();
   const { selectedTeams } = useTeam();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
   const handleBack = () => {
@@ -81,10 +83,14 @@ export default function PhotoEditor() {
       const description = `Captured ${type} from camera`;
 
       await createThought(
-        type,
-        title,
-        description,
-        imageUri
+        {
+          type,
+          title,
+          description,
+          imageUrl: imageUri,
+        },
+        user,
+        selectedTeams[0].id
       );
       
       handleBack();

@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Brain, Camera, MessageSquare, Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -56,6 +57,16 @@ function TabHeader() {
           </Text>
           <ChevronDown color="#6366F1" size={12} />
         </TouchableOpacity>
+
+        {/* Temporary Test Button */}
+        {__DEV__ && (
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={() => router.push('/(app)/embedding-test')}
+          >
+            <Text style={styles.testButtonText}>Test</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -175,5 +186,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#6366F1',
     flex: 1,
+  },
+  testButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: '#FEE2E2',
+  },
+  testButtonText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Medium',
+    color: '#B91C1C',
   },
 });

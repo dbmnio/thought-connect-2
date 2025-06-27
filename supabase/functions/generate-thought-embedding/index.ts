@@ -1,18 +1,24 @@
 // @deno-types="npm:@supabase/functions-js/src/edge-runtime.d.ts"
+console.log('Entered file');
 import { createClient } from 'npm:@supabase/supabase-js@2.39.0';
-import OpenAI from 'openai';
-import { serve } from 'https://deno.land/x/create_serve/mod.ts';
+console.log('Imported supabase-js');
+import OpenAI from 'https://esm.sh/openai@4.24.1';
+console.log('Imported openai');
+import { serve } from 'https://deno.land/std@0.224.0/http/mod.ts';
+console.log('Imported std/http');
 
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: Deno.env.get('OPENAI_API_KEY'),
 });
+console.log('Initialized OpenAI client');
 
 // Initialize Supabase admin client
 const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
+console.log('Initialized Supabase admin client');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,7 +32,7 @@ const corsHeaders = {
  * @param {Request} req - The incoming request object.
  * @returns {Response} - The response from the function.
  */
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -41,12 +47,14 @@ serve(async (req: Request) => {
     }
 
     // 1. Update thought status to 'processing'
+    console.log('Updating thought status to processing');
     await supabaseAdmin
       .from('thoughts')
       .update({ embedding_status: 'processing' })
       .eq('id', thought_id);
 
     // 2. Fetch the thought to get the image URL
+    console.log('Fetching thought to get image URL');
     const { data: thought, error: thoughtError } = await supabaseAdmin
       .from('thoughts')
       .select('image_url')
@@ -64,8 +72,9 @@ serve(async (req: Request) => {
     const imageUrl = thought.image_url;
 
     // 3. Generate AI description from the image
+    console.log('Generating AI description from the image');
     const visionResponse = await openai.chat.completions.create({
-      model: 'gpt-4-vision-preview',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'user',
@@ -85,6 +94,7 @@ serve(async (req: Request) => {
     }
 
     // 4. Generate embedding for the description
+    console.log('Generating embedding for the description');
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: ai_description,
@@ -93,6 +103,7 @@ serve(async (req: Request) => {
     const embedding = embeddingResponse.data[0].embedding;
 
     // 5. Update thought with description, embedding, and 'completed' status
+    console.log('Updating thought with description, embedding, and completed status');
     await supabaseAdmin
       .from('thoughts')
       .update({
@@ -102,11 +113,14 @@ serve(async (req: Request) => {
       })
       .eq('id', thought_id);
 
+    console.log('Successfully generated embedding and updated thought');
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
   } catch (error) {
+    console.error('Error in generate-thought-embedding:', error);
+    
     // Error handling: update status to 'failed'
     if (thought_id) {
       await supabaseAdmin

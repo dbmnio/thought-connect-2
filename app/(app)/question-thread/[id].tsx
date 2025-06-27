@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,13 +12,15 @@ import {
   Platform,
   Dimensions,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, MessageCircle, Heart, Share2, MoveHorizontal as MoreHorizontal, Send, Camera, Paperclip, CircleCheck as CheckCircle, Clock, User, FileText, MessageSquare, CircleHelp as HelpCircle, Plus, Bookmark, Flag, Eye } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
-import { useThoughts } from '@/hooks/useThoughts';
+import { useThoughtStore } from '@/lib/stores/useThoughtStore';
+import { useTeam } from '@/hooks/useTeam';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 
@@ -56,6 +59,8 @@ export default function QuestionThread() {
   const router = useRouter();
   const { id: questionId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { selectedTeams } = useTeam();
+  const { thoughts, fetchThoughts, createThought, subscribeToTeamThoughts } = useThoughtStore();
   const insets = useSafeAreaInsets();
   
   // State
@@ -71,76 +76,33 @@ export default function QuestionThread() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    if (questionId) {
+    const teamIds = selectedTeams.map(t => t.id);
+    if (teamIds.length > 0) {
+      fetchThoughts(teamIds);
+      const unsubscribe = subscribeToTeamThoughts(teamIds);
+      return () => unsubscribe();
+    }
+  }, [selectedTeams, fetchThoughts, subscribeToTeamThoughts]);
+
+  useEffect(() => {
+    if (questionId && thoughts.length > 0) {
       loadQuestionData();
     }
-  }, [questionId]);
+  }, [questionId, thoughts]);
 
   const loadQuestionData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Mock data for now - replace with actual API calls
-      const mockQuestion: QuestionData = {
-        id: questionId || '1',
-        title: 'How do I implement proper state management in React Native?',
-        description: 'I\'m building a complex app with multiple screens and need to share state between components. What are the best practices for state management in React Native? Should I use Context API, Redux, or Zustand?',
-        image_url: 'https://images.pexels.com/photos/270348/pexels-photo-270348.jpeg?auto=compress&cs=tinysrgb&w=800',
-        author_name: 'Sarah Chen',
-        author_avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=200',
-        team_name: 'React Native Developers',
-        created_at: '2024-01-15T10:30:00Z',
-        upvotes: 24,
-        status: 'open',
-        view_count: 156,
-        answer_count: 3,
-      };
-
-      const mockAnswers: Answer[] = [
-        {
-          id: '1',
-          type: 'answer',
-          title: 'Zustand is perfect for this use case',
-          description: 'I recommend using Zustand for React Native state management. It\'s lightweight, has great TypeScript support, and doesn\'t require providers. Here\'s a simple example of how to set it up...',
-          image_url: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800',
-          author_name: 'Alex Rodriguez',
-          author_avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200',
-          created_at: '2024-01-15T11:15:00Z',
-          upvotes: 18,
-          is_accepted: true,
-          confirmation_status: 'confirmed',
-        },
-        {
-          id: '2',
-          type: 'document',
-          title: 'State Management Comparison Chart',
-          description: 'I created this comprehensive comparison of different state management solutions for React Native, including performance benchmarks and use case recommendations.',
-          image_url: 'https://images.pexels.com/photos/590022/pexels-photo-590022.jpeg?auto=compress&cs=tinysrgb&w=800',
-          author_name: 'Maria Garcia',
-          author_avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=200',
-          created_at: '2024-01-15T14:22:00Z',
-          upvotes: 12,
-          is_accepted: false,
-          confirmation_status: 'pending',
-        },
-        {
-          id: '3',
-          type: 'answer',
-          title: 'Context API with useReducer works well too',
-          description: 'For medium-sized apps, the built-in Context API combined with useReducer can be sufficient. It eliminates external dependencies and works great with React DevTools.',
-          image_url: 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=800',
-          author_name: 'David Kim',
-          author_avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=200',
-          created_at: '2024-01-15T16:45:00Z',
-          upvotes: 8,
-          is_accepted: false,
-          confirmation_status: 'confirmed',
-        },
-      ];
-
-      setQuestion(mockQuestion);
-      setAnswers(mockAnswers);
+      const questionData = thoughts.find(t => t.id === questionId);
+      if (questionData) {
+        setQuestion(questionData as any);
+        const answerData = thoughts.filter(t => t.parent_question_id === questionId);
+        setAnswers(answerData as any);
+      } else {
+        setError('Question not found in your teams.');
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to load question');
     } finally {
@@ -172,12 +134,26 @@ export default function QuestionThread() {
   };
 
   const handleSendReply = async () => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() || !user || selectedTeams.length === 0) return;
     
-    // Implement send reply logic
-    console.log('Send reply:', replyText);
-    setReplyText('');
-    setShowReplyInput(false);
+    try {
+      await createThought(
+        {
+          type: 'answer',
+          title: `Re: ${question?.title}`,
+          description: replyText,
+          imageUrl: '', // Or some default/placeholder if needed
+          parentQuestionId: questionId,
+        },
+        user,
+        selectedTeams[0].id
+      );
+      setReplyText('');
+      setShowReplyInput(false);
+    } catch (error) {
+      console.error('Failed to send reply:', error);
+      Alert.alert('Error', 'Failed to send reply. Please try again.');
+    }
   };
 
   const formatTimeAgo = (dateString: string) => {
