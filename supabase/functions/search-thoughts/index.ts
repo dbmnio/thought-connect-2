@@ -27,6 +27,7 @@ serve(async (req) => {
     }
 
     // 1. Embed the user's query
+    console.log('Embedding query');
     const embeddingResponse = await openai.embeddings.create({
       model: "text-embedding-ada-002",
       input: query,
@@ -34,12 +35,14 @@ serve(async (req) => {
     const query_embedding = embeddingResponse.data[0].embedding;
 
     // 2. Query Supabase for nearby results
+    console.log('Querying Supabase');
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
 
+    console.log('supabase rpc call');
     const { data, error } = await supabaseClient.rpc("match_thoughts", {
       query_embedding,
       team_ids: teamIds,
@@ -49,6 +52,7 @@ serve(async (req) => {
 
     if (error) throw error;
 
+    console.log('data', JSON.stringify(data));
     return new Response(JSON.stringify({ thoughts: data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
