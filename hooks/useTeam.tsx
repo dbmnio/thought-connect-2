@@ -8,10 +8,13 @@ type Team = Database['public']['Tables']['teams']['Row'] & {
 };
 
 interface TeamContextType {
-  currentTeam: Team | null;
-  teams: Team[];
+  selectedTeams: Team[];
+  allTeams: Team[];
   loading: boolean;
-  switchTeam: (teamId: string) => void;
+  toggleTeamSelection: (teamId: string) => void;
+  selectAllTeams: () => void;
+  selectNoTeams: () => void;
+  isTeamSelected: (teamId: string) => boolean;
   createTeam: (name: string, memberEmails: string[]) => Promise<void>;
   refreshTeams: () => Promise<void>;
 }
@@ -20,8 +23,8 @@ const TeamContext = createContext<TeamContextType | undefined>(undefined);
 
 export function TeamProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<Team[]>([]);
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,12 +68,22 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         })
       );
 
-      setTeams(teamsWithCounts);
+      setAllTeams(teamsWithCounts);
       
-      // Set personal team as default if no current team
-      if (!currentTeam && teamsWithCounts.length > 0) {
+      // If no teams are selected, select the personal team by default
+      if (selectedTeams.length === 0 && teamsWithCounts.length > 0) {
         const personalTeam = teamsWithCounts.find(t => t.name === 'Personal');
-        setCurrentTeam(personalTeam || teamsWithCounts[0]);
+        if (personalTeam) {
+          setSelectedTeams([personalTeam]);
+        } else {
+          setSelectedTeams([teamsWithCounts[0]]);
+        }
+      } else {
+        // Update selected teams with fresh data
+        const updatedSelectedTeams = selectedTeams
+          .map(selectedTeam => teamsWithCounts.find(t => t.id === selectedTeam.id))
+          .filter(Boolean) as Team[];
+        setSelectedTeams(updatedSelectedTeams);
       }
     } catch (error) {
       console.error('Error fetching teams:', error);
@@ -79,11 +92,38 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const switchTeam = (teamId: string) => {
-    const team = teams.find(t => t.id === teamId);
-    if (team) {
-      setCurrentTeam(team);
+  const toggleTeamSelection = (teamId: string) => {
+    const team = allTeams.find(t => t.id === teamId);
+    if (!team) return;
+
+    setSelectedTeams(prev => {
+      const isSelected = prev.some(t => t.id === teamId);
+      if (isSelected) {
+        // Don't allow deselecting all teams
+        if (prev.length === 1) return prev;
+        return prev.filter(t => t.id !== teamId);
+      } else {
+        return [...prev, team];
+      }
+    });
+  };
+
+  const selectAllTeams = () => {
+    setSelectedTeams([...allTeams]);
+  };
+
+  const selectNoTeams = () => {
+    // Always keep at least one team selected (Personal or first available)
+    const personalTeam = allTeams.find(t => t.name === 'Personal');
+    if (personalTeam) {
+      setSelectedTeams([personalTeam]);
+    } else if (allTeams.length > 0) {
+      setSelectedTeams([allTeams[0]]);
     }
+  };
+
+  const isTeamSelected = (teamId: string) => {
+    return selectedTeams.some(t => t.id === teamId);
   };
 
   const createTeam = async (name: string, memberEmails: string[]) => {
@@ -181,11 +221,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       // Refresh teams to show the new team
       await fetchTeams();
       
-      // Switch to the newly created team
-      setCurrentTeam({
+      // Add the newly created team to selected teams
+      const newTeamWithCount = {
         ...teamData,
         member_count: validProfiles.length + 1, // +1 for the owner
-      });
+      };
+      setSelectedTeams(prev => [...prev, newTeamWithCount]);
 
     } catch (error) {
       throw error;
@@ -195,10 +236,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   return (
     <TeamContext.Provider
       value={{
-        currentTeam,
-        teams,
+        selectedTeams,
+        allTeams,
         loading,
-        switchTeam,
+        toggleTeamSelection,
+        selectAllTeams,
+        selectNoTeams,
+        isTeamSelected,
         createTeam,
         refreshTeams: fetchTeams,
       }}

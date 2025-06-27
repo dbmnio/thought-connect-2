@@ -13,21 +13,25 @@ type Thought = Database['public']['Tables']['thoughts']['Row'] & {
 
 export function useThoughts() {
   const { user } = useAuth();
-  const { currentTeam } = useTeam();
+  const { selectedTeams } = useTeam();
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user && currentTeam) {
+    if (user && selectedTeams.length > 0) {
       fetchThoughts();
     }
-  }, [user, currentTeam]);
+  }, [user, selectedTeams]);
 
   const fetchThoughts = async () => {
-    if (!user || !currentTeam) return;
+    if (!user || selectedTeams.length === 0) return;
 
     try {
       setLoading(true);
+      
+      // Get team IDs from selected teams
+      const teamIds = selectedTeams.map(team => team.id);
+      
       const { data, error } = await supabase
         .from('thoughts')
         .select(`
@@ -35,7 +39,7 @@ export function useThoughts() {
           profiles!thoughts_user_id_fkey (full_name),
           teams!thoughts_team_id_fkey (name)
         `)
-        .eq('team_id', currentTeam.id)
+        .in('team_id', teamIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -80,14 +84,17 @@ export function useThoughts() {
     imageUrl: string,
     parentQuestionId?: string
   ) => {
-    if (!user || !currentTeam) throw new Error('User or team not available');
+    if (!user || selectedTeams.length === 0) throw new Error('User or teams not available');
+
+    // Use the first selected team for creating new thoughts
+    const targetTeam = selectedTeams[0];
 
     try {
       const { data, error } = await supabase
         .from('thoughts')
         .insert({
           user_id: user.id,
-          team_id: currentTeam.id,
+          team_id: targetTeam.id,
           type,
           title,
           description,

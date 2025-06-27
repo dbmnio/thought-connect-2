@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   TextInput,
   StyleSheet,
   Dimensions,
-  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Check, CircleHelp as HelpCircle, MessageSquare, FileText } from 'lucide-react-native';
+import { ArrowLeft, Check, CircleHelp as HelpCircle, MessageSquare, FileText, ChevronDown } from 'lucide-react-native';
+import { useThoughts } from '@/hooks/useThoughts';
+import { useTeam } from '@/hooks/useTeam';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,8 +23,12 @@ export default function PhotoEditor() {
     thoughtType: 'question' | 'answer' | 'document';
   }>();
 
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { createThought } = useThoughts();
+  const { selectedTeams } = useTeam();
 
   const getTypeInfo = () => {
     switch (thoughtType) {
@@ -32,62 +37,66 @@ export default function PhotoEditor() {
           icon: HelpCircle,
           title: 'Ask Question',
           color: '#EF4444',
-          placeholder: 'Describe your question...',
+          titlePlaceholder: 'What\'s your question?',
+          descriptionPlaceholder: 'Provide more details about your question...',
         };
       case 'answer':
         return {
           icon: MessageSquare,
           title: 'Share Answer',
           color: '#10B981',
-          placeholder: 'Explain your answer...',
+          titlePlaceholder: 'What\'s your answer?',
+          descriptionPlaceholder: 'Explain your answer in detail...',
         };
       case 'document':
         return {
           icon: FileText,
           title: 'Add Document',
           color: '#F59E0B',
-          placeholder: 'Describe this document...',
+          titlePlaceholder: 'Document title',
+          descriptionPlaceholder: 'Describe this document...',
         };
       default:
         return {
           icon: MessageSquare,
           title: 'Add Thought',
           color: '#6366F1',
-          placeholder: 'Describe your thought...',
+          titlePlaceholder: 'Title',
+          descriptionPlaceholder: 'Description...',
         };
     }
   };
 
   const handleSave = async () => {
+    if (!title.trim()) {
+      setError('Please add a title for your thought');
+      return;
+    }
+
     if (!description.trim()) {
-      Alert.alert('Error', 'Please add a description for your thought');
+      setError('Please add a description for your thought');
+      return;
+    }
+
+    if (selectedTeams.length === 0) {
+      setError('Please select at least one team');
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
-      // Simulate API call to save thought
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await createThought(
+        thoughtType,
+        title.trim(),
+        description.trim(),
+        imageUri
+      );
       
-      // Show different behavior based on thought type
-      if (thoughtType === 'question') {
-        // Simulate searching for existing answers
-        Alert.alert(
-          'Question Saved',
-          'We found some similar answers that might help. Would you like to review them?',
-          [
-            { text: 'Not Now', onPress: () => router.back() },
-            { text: 'Review', onPress: () => router.back() },
-          ]
-        );
-      } else {
-        Alert.alert('Success', 'Your thought has been saved!', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save thought. Please try again.');
+      router.back();
+    } catch (error: any) {
+      setError(error.message || 'Failed to save thought. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -128,22 +137,57 @@ export default function PhotoEditor() {
         <Image source={{ uri: imageUri }} style={styles.image} />
       </View>
 
-      {/* Description Input */}
+      {/* Input Form */}
       <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>Description</Text>
-        <TextInput
-          style={styles.textInput}
-          value={description}
-          onChangeText={setDescription}
-          placeholder={typeInfo.placeholder}
-          placeholderTextColor="#9CA3AF"
-          multiline
-          maxLength={500}
-          textAlignVertical="top"
-        />
-        <Text style={styles.characterCount}>
-          {description.length}/500
-        </Text>
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {/* Team Selection Info */}
+        <View style={styles.teamInfoContainer}>
+          <Text style={styles.teamInfoLabel}>
+            Will be posted to: {selectedTeams.length > 0 ? selectedTeams[0].name : 'No team selected'}
+          </Text>
+          {selectedTeams.length > 1 && (
+            <Text style={styles.teamInfoSubtext}>
+              (First selected team: {selectedTeams[0].name})
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Title</Text>
+          <TextInput
+            style={styles.titleInput}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={typeInfo.titlePlaceholder}
+            placeholderTextColor="#9CA3AF"
+            maxLength={100}
+          />
+          <Text style={styles.characterCount}>
+            {title.length}/100
+          </Text>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Description</Text>
+          <TextInput
+            style={styles.descriptionInput}
+            value={description}
+            onChangeText={setDescription}
+            placeholder={typeInfo.descriptionPlaceholder}
+            placeholderTextColor="#9CA3AF"
+            multiline
+            maxLength={500}
+            textAlignVertical="top"
+          />
+          <Text style={styles.characterCount}>
+            {description.length}/500
+          </Text>
+        </View>
       </View>
 
       {/* Save Button */}
@@ -235,13 +279,49 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 0,
   },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
+  },
+  teamInfoContainer: {
+    backgroundColor: '#F0F9FF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0F2FE',
+  },
+  teamInfoLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#0369A1',
+  },
+  teamInfoSubtext: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#0284C7',
+    marginTop: 2,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
   inputLabel: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
     marginBottom: 8,
   },
-  textInput: {
+  titleInput: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
@@ -250,7 +330,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#1F2937',
-    height: 120,
+  },
+  descriptionInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#1F2937',
+    height: 100,
   },
   characterCount: {
     fontSize: 12,

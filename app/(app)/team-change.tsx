@@ -6,46 +6,45 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  Alert,
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Users, Plus, LogOut, Check, Mail, X } from 'lucide-react-native';
+import { ArrowLeft, Users, Plus, LogOut, Check, Mail, X, CheckSquare, Square } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
 
 export default function TeamChange() {
   const router = useRouter();
   const { user, profile, signOut } = useAuth();
-  const { currentTeam, teams, switchTeam, createTeam } = useTeam();
+  const { 
+    selectedTeams, 
+    allTeams, 
+    toggleTeamSelection, 
+    selectAllTeams, 
+    selectNoTeams, 
+    isTeamSelected, 
+    createTeam 
+  } = useTeam();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [teamName, setTeamName] = useState('');
   const [memberEmails, setMemberEmails] = useState<string[]>(['']);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-            router.replace('/(auth)/sign-in');
-          },
-        },
-      ]
-    );
+    try {
+      await signOut();
+      router.replace('/(auth)/sign-in');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const handleCreateTeam = async () => {
     if (!teamName.trim()) {
-      Alert.alert('Error', 'Please enter a team name');
+      setError('Please enter a team name');
       return;
     }
 
@@ -54,19 +53,20 @@ export default function TeamChange() {
     );
 
     if (validEmails.length === 0) {
-      Alert.alert('Error', 'Please add at least one valid email address');
+      setError('Please add at least one valid email address');
       return;
     }
 
     setLoading(true);
+    setError(null);
+    
     try {
       await createTeam(teamName.trim(), validEmails);
       setShowCreateModal(false);
       setTeamName('');
       setMemberEmails(['']);
-      Alert.alert('Success', 'Team created successfully!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create team');
+    } catch (error: any) {
+      setError(error.message || 'Failed to create team');
     } finally {
       setLoading(false);
     }
@@ -90,6 +90,14 @@ export default function TeamChange() {
     }
   };
 
+  const handleSelectAll = () => {
+    if (selectedTeams.length === allTeams.length) {
+      selectNoTeams();
+    } else {
+      selectAllTeams();
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -100,7 +108,7 @@ export default function TeamChange() {
         >
           <ArrowLeft color="#6366F1" size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Teams</Text>
+        <Text style={styles.headerTitle}>Select Teams</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -121,47 +129,70 @@ export default function TeamChange() {
           </TouchableOpacity>
         </View>
 
-        {/* Teams List */}
+        {/* Team Selection Controls */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Teams</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Your Teams</Text>
+            <TouchableOpacity style={styles.selectAllButton} onPress={handleSelectAll}>
+              <Text style={styles.selectAllText}>
+                {selectedTeams.length === allTeams.length ? 'Deselect All' : 'Select All'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={styles.sectionSubtitle}>
+            Selected: {selectedTeams.length} of {allTeams.length} teams
+          </Text>
+
           <View style={styles.teamsList}>
-            {teams.map((team) => (
-              <TouchableOpacity
-                key={team.id}
-                style={[
-                  styles.teamCard,
-                  currentTeam?.id === team.id && styles.teamCardActive,
-                ]}
-                onPress={() => switchTeam(team.id)}
-              >
-                <View style={styles.teamInfo}>
-                  <View style={styles.teamIcon}>
-                    <Users color={currentTeam?.id === team.id ? '#FFFFFF' : '#6366F1'} size={20} />
+            {allTeams.map((team) => {
+              const isSelected = isTeamSelected(team.id);
+              
+              return (
+                <TouchableOpacity
+                  key={team.id}
+                  style={[
+                    styles.teamCard,
+                    isSelected && styles.teamCardSelected,
+                  ]}
+                  onPress={() => toggleTeamSelection(team.id)}
+                >
+                  <View style={styles.teamInfo}>
+                    <View style={styles.teamIconContainer}>
+                      <View style={styles.teamIcon}>
+                        <Users color={isSelected ? '#FFFFFF' : '#6366F1'} size={20} />
+                      </View>
+                      <View style={styles.teamDetails}>
+                        <Text
+                          style={[
+                            styles.teamName,
+                            isSelected && styles.teamNameSelected,
+                          ]}
+                        >
+                          {team.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.teamMembers,
+                            isSelected && styles.teamMembersSelected,
+                          ]}
+                        >
+                          {team.member_count} member{team.member_count !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.checkboxContainer}>
+                      {isSelected ? (
+                        <CheckSquare color={isSelected ? '#FFFFFF' : '#6366F1'} size={24} />
+                      ) : (
+                        <Square color="#9CA3AF" size={24} />
+                      )}
+                    </View>
                   </View>
-                  <View style={styles.teamDetails}>
-                    <Text
-                      style={[
-                        styles.teamName,
-                        currentTeam?.id === team.id && styles.teamNameActive,
-                      ]}
-                    >
-                      {team.name}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.teamMembers,
-                        currentTeam?.id === team.id && styles.teamMembersActive,
-                      ]}
-                    >
-                      {team.member_count} member{team.member_count !== 1 ? 's' : ''}
-                    </Text>
-                  </View>
-                </View>
-                {currentTeam?.id === team.id && (
-                  <Check color="#FFFFFF" size={20} />
-                )}
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -187,7 +218,10 @@ export default function TeamChange() {
           <View style={styles.modalHeader}>
             <TouchableOpacity
               style={styles.modalCloseButton}
-              onPress={() => setShowCreateModal(false)}
+              onPress={() => {
+                setShowCreateModal(false);
+                setError(null);
+              }}
             >
               <X color="#6B7280" size={24} />
             </TouchableOpacity>
@@ -196,6 +230,12 @@ export default function TeamChange() {
           </View>
 
           <ScrollView style={styles.modalContent}>
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Team Name</Text>
               <TextInput
@@ -269,6 +309,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: 60,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -345,30 +386,54 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
+  },
+  selectAllButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+  },
+  selectAllText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6366F1',
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
     marginBottom: 12,
   },
   teamsList: {
     gap: 8,
   },
   teamCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
     borderColor: '#F3F4F6',
   },
-  teamCardActive: {
+  teamCardSelected: {
     backgroundColor: '#6366F1',
     borderColor: '#6366F1',
   },
   teamInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  teamIconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
@@ -390,7 +455,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
   },
-  teamNameActive: {
+  teamNameSelected: {
     color: '#FFFFFF',
   },
   teamMembers: {
@@ -399,8 +464,11 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 2,
   },
-  teamMembersActive: {
+  teamMembersSelected: {
     color: '#E5E7EB',
+  },
+  checkboxContainer: {
+    marginLeft: 12,
   },
   createTeamButton: {
     marginTop: 20,
@@ -451,6 +519,20 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: 20,
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
   },
   inputGroup: {
     marginBottom: 24,

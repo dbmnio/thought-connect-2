@@ -1,12 +1,19 @@
 import { Tabs } from 'expo-router';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Brain, Camera, MessageSquare, Users } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { Brain, Camera, MessageSquare, Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTeam } from '@/hooks/useTeam';
 
 function TabHeader() {
   const router = useRouter();
-  const { currentTeam } = useTeam();
+  const { selectedTeams } = useTeam();
+
+  const getDisplayText = () => {
+    if (selectedTeams.length === 0) return 'No Teams';
+    if (selectedTeams.length === 1) return selectedTeams[0].name;
+    if (selectedTeams.length === 2) return `${selectedTeams[0].name} + 1 more`;
+    return `${selectedTeams[0].name} + ${selectedTeams.length - 1} more`;
+  };
 
   return (
     <View style={styles.header}>
@@ -17,9 +24,27 @@ function TabHeader() {
           onPress={() => router.push('/(app)/team-change')}
         >
           <Users color="#6366F1" size={16} />
-          <Text style={styles.teamText}>{currentTeam?.name || 'Personal'}</Text>
+          <Text style={styles.teamText} numberOfLines={1}>
+            {getDisplayText()}
+          </Text>
+          <ChevronDown color="#6366F1" size={14} />
         </TouchableOpacity>
       </View>
+      
+      {selectedTeams.length > 1 && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.selectedTeamsContainer}
+          contentContainerStyle={styles.selectedTeamsContent}
+        >
+          {selectedTeams.map((team, index) => (
+            <View key={team.id} style={styles.teamChip}>
+              <Text style={styles.teamChipText}>{team.name}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -37,14 +62,14 @@ export default function TabLayout() {
             backgroundColor: '#FFFFFF',
             borderTopWidth: 1,
             borderTopColor: '#F3F4F6',
-            paddingBottom: 4, // Reduced from 8
-            paddingTop: 4,    // Reduced from 8
-            height: 60,       // Reduced from 80
+            paddingBottom: 4,
+            paddingTop: 4,
+            height: 60,
           },
           tabBarLabelStyle: {
-            fontSize: 11,     // Slightly smaller
+            fontSize: 11,
             fontFamily: 'Inter-Medium',
-            marginTop: 2,     // Reduced from 4
+            marginTop: 2,
           },
         }}
       >
@@ -53,7 +78,7 @@ export default function TabLayout() {
           options={{
             title: 'Knowledge',
             tabBarIcon: ({ color, size }) => (
-              <Brain color={color} size={20} />  // Slightly smaller icons
+              <Brain color={color} size={20} />
             ),
           }}
         />
@@ -93,6 +118,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   logo: {
     fontSize: 20,
@@ -107,10 +133,32 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     gap: 4,
+    maxWidth: 180,
   },
   teamText: {
     fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#6366F1',
+    flex: 1,
+  },
+  selectedTeamsContainer: {
+    marginTop: 4,
+  },
+  selectedTeamsContent: {
+    gap: 6,
+    paddingRight: 20,
+  },
+  teamChip: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  teamChipText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Medium',
+    color: '#3B82F6',
   },
 });
