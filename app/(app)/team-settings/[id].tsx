@@ -351,8 +351,8 @@ export default function TeamSettings() {
         <View style={styles.section}>
           <View style={styles.teamHeader}>
             <Avatar
-              uri={team.avatar_url}
-              name={team.name}
+              uri={team?.avatar_url}
+              name={team?.name || ''}
               size="xlarge"
             />
             <TouchableOpacity style={styles.avatarEditButton}>
@@ -415,8 +415,8 @@ export default function TeamSettings() {
               </>
             ) : (
               <>
-                <Text style={styles.teamName}>{team.name}</Text>
-                {team.description && (
+                <Text style={styles.teamName}>{team?.name || ''}</Text>
+                {team?.description && (
                   <Text style={styles.teamDescription}>{team.description}</Text>
                 )}
                 <View style={styles.teamStats}>
@@ -425,12 +425,12 @@ export default function TeamSettings() {
                     <Text style={styles.statLabel}>Members</Text>
                   </View>
                   <View style={styles.stat}>
-                    <Text style={styles.statValue}>{team.member_limit}</Text>
+                    <Text style={styles.statValue}>{team?.member_limit || 0}</Text>
                     <Text style={styles.statLabel}>Limit</Text>
                   </View>
                   <View style={styles.stat}>
                     <Text style={styles.statValue}>
-                      {new Date(team.created_at).toLocaleDateString()}
+                      {team?.created_at ? new Date(team.created_at).toLocaleDateString() : ''}
                     </Text>
                     <Text style={styles.statLabel}>Created</Text>
                   </View>
@@ -522,7 +522,7 @@ export default function TeamSettings() {
                   setConfirmAction({
                     type: 'delete',
                     title: 'Delete Team',
-                    message: `Are you sure you want to delete "${team.name}"? This action cannot be undone and all team data will be lost.`,
+                    message: `Are you sure you want to delete "${team?.name || 'this team'}"? This action cannot be undone and all team data will be lost.`,
                     action: handleDeleteTeam,
                   });
                   setShowConfirmDialog(true);
@@ -538,7 +538,7 @@ export default function TeamSettings() {
                   setConfirmAction({
                     type: 'leave',
                     title: 'Leave Team',
-                    message: `Are you sure you want to leave "${team.name}"? You'll need to be re-invited to rejoin.`,
+                    message: `Are you sure you want to leave "${team?.name || 'this team'}"? You'll need to be re-invited to rejoin.`,
                     action: handleLeaveTeam,
                   });
                   setShowConfirmDialog(true);
@@ -576,7 +576,7 @@ export default function TeamSettings() {
 
           <ScrollView style={styles.modalContent}>
             <Text style={styles.modalDescription}>
-              Invite new members to join "{team.name}" by entering their email addresses.
+              Invite new members to join "{team?.name || 'this team'}" by entering their email addresses.
             </Text>
 
             <View style={styles.inputGroup}>
