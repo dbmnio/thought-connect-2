@@ -22,8 +22,6 @@ type ThoughtType = 'question' | 'answer' | 'document';
 interface TypeOption {
   type: ThoughtType;
   icon: any;
-  title: string;
-  description: string;
   color: string;
   gradient: string[];
 }
@@ -32,24 +30,18 @@ const typeOptions: TypeOption[] = [
   {
     type: 'question',
     icon: HelpCircle,
-    title: 'Question',
-    description: 'Ask your community',
     color: '#EF4444',
     gradient: ['#EF4444', '#DC2626'],
   },
   {
     type: 'answer',
     icon: MessageSquare,
-    title: 'Answer',
-    description: 'Share knowledge',
     color: '#10B981',
     gradient: ['#10B981', '#059669'],
   },
   {
     type: 'document',
     icon: FileText,
-    title: 'Document',
-    description: 'Save information',
     color: '#F59E0B',
     gradient: ['#F59E0B', '#D97706'],
   },
@@ -155,15 +147,7 @@ export default function PhotoEditor() {
                     style={styles.typeButtonGradient}
                   >
                     <View style={styles.typeButtonContent}>
-                      <View style={styles.iconContainer}>
-                        <IconComponent color="#FFFFFF" size={32} />
-                      </View>
-                      <Text style={styles.typeButtonTitle}>
-                        {isLoading ? 'Saving...' : option.title}
-                      </Text>
-                      <Text style={styles.typeButtonDescription}>
-                        {option.description}
-                      </Text>
+                      <IconComponent color="#FFFFFF" size={40} />
                     </View>
                   </LinearGradient>
                 </TouchableOpacity>
@@ -290,28 +274,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-  },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  typeButtonTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  typeButtonDescription: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    lineHeight: 16,
   },
 });
