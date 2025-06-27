@@ -230,9 +230,35 @@ export default function UserProfile() {
                     <Users color="#FFFFFF" size={24} />
                   </View>
                   <View style={styles.teamManagementText}>
-                    <Text style={styles.teamManagementTitle}>Manage Teams</Text>
+                    <Text style={styles.teamManagementTitle}>Manage</Text>
                     <Text style={styles.teamManagementSubtitle}>
-                      Create, join, and manage your teams
+                      Manage teams you own
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.teamManagementArrow}>
+                  <Text style={styles.teamManagementArrowText}>›</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+            style={styles.teamManagementButton}
+            onPress={() => router.push('/(app)/stub')}
+            activeOpacity={0.7}
+          >
+            <LinearGradient colors={['#6366F1', '#3B82F6']} style={styles.teamManagementGradient}>
+              <View style={styles.teamManagementContent}>
+                <View style={styles.teamManagementLeft}>
+                  <View style={styles.teamManagementIcon}>
+                    <Users color="#FFFFFF" size={24} />
+                  </View>
+                  <View style={styles.teamManagementText}>
+                    <Text style={styles.teamManagementTitle}>Create</Text>
+                    <Text style={styles.teamManagementSubtitle}>
+                      Create a new team
                     </Text>
                   </View>
                 </View>
