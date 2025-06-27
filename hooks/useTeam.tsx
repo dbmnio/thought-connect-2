@@ -90,6 +90,52 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('User not authenticated');
 
     try {
+      // Filter out empty emails and normalize
+      const validEmails = memberEmails
+        .map(email => email.trim().toLowerCase())
+        .filter(email => email && email.includes('@'));
+
+      if (validEmails.length === 0) {
+        throw new Error('Please add at least one valid email address');
+      }
+
+      // Check if all emails exist in the database
+      const emailValidationResults = await Promise.all(
+        validEmails.map(async (email) => {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .eq('email', email);
+
+          if (error) {
+            throw new Error(`Error checking email ${email}: ${error.message}`);
+          }
+
+          return {
+            email,
+            exists: data && data.length > 0,
+            profile: data && data.length > 0 ? data[0] : null
+          };
+        })
+      );
+
+      // Find emails that don't exist
+      const nonExistentEmails = emailValidationResults
+        .filter(result => !result.exists)
+        .map(result => result.email);
+
+      if (nonExistentEmails.length > 0) {
+        const emailList = nonExistentEmails.join(', ');
+        throw new Error(
+          `The following email${nonExistentEmails.length > 1 ? 's are' : ' is'} not associated with any user account: ${emailList}. Please ask ${nonExistentEmails.length > 1 ? 'them' : 'the user'} to sign up for the app first before adding ${nonExistentEmails.length > 1 ? 'them' : 'them'} to a team.`
+        );
+      }
+
+      // Get all valid profile IDs
+      const validProfiles = emailValidationResults
+        .filter(result => result.exists && result.profile)
+        .map(result => result.profile!);
+
       // Create team
       const { data: teamData, error: teamError } = await supabase
         .from('teams')
@@ -113,38 +159,34 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
       if (ownerError) throw ownerError;
 
-      // Add other members
-      for (const email of memberEmails) {
-        if (email.trim()) {
-          // Check if user exists - remove .single() to avoid error when no user found
-          const { data: userData, error: userError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email.trim());
+      // Add all valid members
+      if (validProfiles.length > 0) {
+        const memberInserts = validProfiles.map(profile => ({
+          team_id: teamData.id,
+          user_id: profile.id,
+          role: 'member' as const,
+        }));
 
-          if (userError) {
-            throw new Error(`Error checking user with email ${email}: ${userError.message}`);
-          }
+        const { error: memberError } = await supabase
+          .from('team_members')
+          .insert(memberInserts);
 
-          // Check if user was found
-          if (!userData || userData.length === 0) {
-            throw new Error(`User with email ${email} not found. Please ask them to sign up for the app first before adding them to a team.`);
-          }
-
-          // Add as member
-          const { error: memberError } = await supabase
-            .from('team_members')
-            .insert({
-              team_id: teamData.id,
-              user_id: userData[0].id,
-              role: 'member',
-            });
-
-          if (memberError) throw memberError;
+        if (memberError) {
+          // If member insertion fails, we should still consider the team created
+          console.error('Error adding some team members:', memberError);
+          throw new Error(`Team created successfully, but there was an error adding some members: ${memberError.message}`);
         }
       }
 
+      // Refresh teams to show the new team
       await fetchTeams();
+      
+      // Switch to the newly created team
+      setCurrentTeam({
+        ...teamData,
+        member_count: validProfiles.length + 1, // +1 for the owner
+      });
+
     } catch (error) {
       throw error;
     }
