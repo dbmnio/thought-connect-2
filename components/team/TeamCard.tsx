@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { Users, MoreVertical, Crown, Clock } from 'lucide-react-native';
+import { Users, MoveVertical as MoreVertical, Crown, Clock } from 'lucide-react-native';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Database } from '@/types/database';
