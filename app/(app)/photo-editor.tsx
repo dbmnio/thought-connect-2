@@ -69,6 +69,15 @@ export default function PhotoEditor() {
     }
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      // Navigate to camera screen if there's no previous screen
+      router.replace('/(app)/(tabs)/camera');
+    }
+  };
+
   const handleSave = async () => {
     if (!title.trim()) {
       setError('Please add a title for your thought');
@@ -96,7 +105,7 @@ export default function PhotoEditor() {
         imageUri
       );
       
-      router.back();
+      handleBack();
     } catch (error: any) {
       setError(error.message || 'Failed to save thought. Please try again.');
     } finally {
@@ -113,7 +122,7 @@ export default function PhotoEditor() {
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={handleBack}
         >
           <ArrowLeft color="#FFFFFF" size={24} />
         </TouchableOpacity>
