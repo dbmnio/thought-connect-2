@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  Alert,
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -66,6 +67,19 @@ export default function Camera() {
       }
     } catch (error) {
       console.error('Failed to take picture:', error);
+      
+      // Show user-friendly error message
+      if (Platform.OS === 'web') {
+        // For web platform, show a simple alert
+        alert('Failed to capture image. Please try again.');
+      } else {
+        // For mobile platforms, use Alert API
+        Alert.alert(
+          'Camera Error',
+          'Failed to capture image. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
