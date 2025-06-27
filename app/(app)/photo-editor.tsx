@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,13 +18,52 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
+type ThoughtType = 'question' | 'answer' | 'document';
+
+interface TypeOption {
+  type: ThoughtType;
+  icon: any;
+  title: string;
+  description: string;
+  color: string;
+  gradient: string[];
+}
+
+const typeOptions: TypeOption[] = [
+  {
+    type: 'question',
+    icon: HelpCircle,
+    title: 'Ask Question',
+    description: 'Get answers from your community',
+    color: '#EF4444',
+    gradient: ['#EF4444', '#DC2626'],
+  },
+  {
+    type: 'answer',
+    icon: MessageSquare,
+    title: 'Share Answer',
+    description: 'Help others with your knowledge',
+    color: '#10B981',
+    gradient: ['#10B981', '#059669'],
+  },
+  {
+    type: 'document',
+    icon: FileText,
+    title: 'Save Document',
+    description: 'Store important information',
+    color: '#F59E0B',
+    gradient: ['#F59E0B', '#D97706'],
+  },
+];
+
 export default function PhotoEditor() {
   const router = useRouter();
   const { imageUri, thoughtType } = useLocalSearchParams<{
     imageUri: string;
-    thoughtType: 'question' | 'answer' | 'document';
+    thoughtType?: ThoughtType;
   }>();
 
+  const [selectedType, setSelectedType] = useState<ThoughtType | null>(thoughtType || null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,53 +72,50 @@ export default function PhotoEditor() {
   const { selectedTeams } = useTeam();
   const insets = useSafeAreaInsets();
 
-  const getTypeInfo = () => {
-    switch (thoughtType) {
-      case 'question':
-        return {
-          icon: HelpCircle,
-          title: 'Ask Question',
-          color: '#EF4444',
-          titlePlaceholder: 'What\'s your question?',
-          descriptionPlaceholder: 'Provide more details about your question...',
-        };
-      case 'answer':
-        return {
-          icon: MessageSquare,
-          title: 'Share Answer',
-          color: '#10B981',
-          titlePlaceholder: 'What\'s your answer?',
-          descriptionPlaceholder: 'Explain your answer in detail...',
-        };
-      case 'document':
-        return {
-          icon: FileText,
-          title: 'Add Document',
-          color: '#F59E0B',
-          titlePlaceholder: 'Document title',
-          descriptionPlaceholder: 'Describe this document...',
-        };
-      default:
-        return {
-          icon: MessageSquare,
-          title: 'Add Thought',
-          color: '#6366F1',
-          titlePlaceholder: 'Title',
-          descriptionPlaceholder: 'Description...',
-        };
-    }
-  };
-
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
     } else {
-      // Navigate to camera screen if there's no previous screen
       router.replace('/(app)/(tabs)/camera');
     }
   };
 
+  const handleTypeSelect = (type: ThoughtType) => {
+    setSelectedType(type);
+    setError(null);
+  };
+
+  const getPlaceholders = () => {
+    if (!selectedType) return { title: '', description: '' };
+    
+    const option = typeOptions.find(opt => opt.type === selectedType);
+    switch (selectedType) {
+      case 'question':
+        return {
+          title: 'What\'s your question?',
+          description: 'Provide more details about your question...',
+        };
+      case 'answer':
+        return {
+          title: 'What\'s your answer?',
+          description: 'Explain your answer in detail...',
+        };
+      case 'document':
+        return {
+          title: 'Document title',
+          description: 'Describe this document...',
+        };
+      default:
+        return { title: 'Title', description: 'Description...' };
+    }
+  };
+
   const handleSave = async () => {
+    if (!selectedType) {
+      setError('Please select a type for your thought');
+      return;
+    }
+
     if (!title.trim()) {
       setError('Please add a title for your thought');
       return;
@@ -99,7 +136,7 @@ export default function PhotoEditor() {
 
     try {
       await createThought(
-        thoughtType,
+        selectedType,
         title.trim(),
         description.trim(),
         imageUri
@@ -113,111 +150,163 @@ export default function PhotoEditor() {
     }
   };
 
-  const typeInfo = getTypeInfo();
-  const IconComponent = typeInfo.icon;
+  const placeholders = getPlaceholders();
+  const selectedOption = typeOptions.find(opt => opt.type === selectedType);
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBack}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <ArrowLeft color="#FFFFFF" size={24} />
         </TouchableOpacity>
         
-        <View style={styles.headerCenter}>
-          <View style={[styles.typeIndicator, { backgroundColor: typeInfo.color }]}>
-            <IconComponent color="#FFFFFF" size={20} />
-          </View>
-          <Text style={styles.headerTitle}>{typeInfo.title}</Text>
+        <Text style={styles.headerTitle}>
+          {selectedType ? selectedOption?.title : 'Choose Type'}
+        </Text>
+
+        {selectedType && (
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            <Check color="#FFFFFF" size={24} />
+          </TouchableOpacity>
+        )}
+        
+        {!selectedType && <View style={styles.headerRight} />}
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Image Preview */}
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: imageUri }} style={styles.image} />
         </View>
 
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          <Check color="#FFFFFF" size={24} />
-        </TouchableOpacity>
-      </View>
+        {!selectedType ? (
+          /* Type Selection */
+          <View style={styles.typeSelectionContainer}>
+            <Text style={styles.sectionTitle}>What would you like to create?</Text>
+            <Text style={styles.sectionSubtitle}>
+              Choose the type of content you want to share with your team
+            </Text>
 
-      {/* Image Preview */}
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: imageUri }} style={styles.image} />
-      </View>
+            <View style={styles.typeOptions}>
+              {typeOptions.map((option) => {
+                const IconComponent = option.icon;
+                
+                return (
+                  <TouchableOpacity
+                    key={option.type}
+                    style={styles.typeOption}
+                    onPress={() => handleTypeSelect(option.type)}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient
+                      colors={option.gradient}
+                      style={styles.typeOptionGradient}
+                    >
+                      <View style={styles.typeOptionContent}>
+                        <View style={styles.typeOptionIcon}>
+                          <IconComponent color="#FFFFFF" size={32} />
+                        </View>
+                        <View style={styles.typeOptionText}>
+                          <Text style={styles.typeOptionTitle}>{option.title}</Text>
+                          <Text style={styles.typeOptionDescription}>
+                            {option.description}
+                          </Text>
+                        </View>
+                      </View>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ) : (
+          /* Content Form */
+          <View style={styles.formContainer}>
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
 
-      {/* Input Form */}
-      <View style={styles.inputContainer}>
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+            {/* Team Selection Info */}
+            <View style={styles.teamInfoContainer}>
+              <Text style={styles.teamInfoLabel}>
+                Will be posted to: {selectedTeams.length > 0 ? selectedTeams[0].name : 'No team selected'}
+              </Text>
+              {selectedTeams.length > 1 && (
+                <Text style={styles.teamInfoSubtext}>
+                  (First selected team: {selectedTeams[0].name})
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Title</Text>
+              <TextInput
+                style={styles.titleInput}
+                value={title}
+                onChangeText={setTitle}
+                placeholder={placeholders.title}
+                placeholderTextColor="#9CA3AF"
+                maxLength={100}
+              />
+              <Text style={styles.characterCount}>
+                {title.length}/100
+              </Text>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={styles.descriptionInput}
+                value={description}
+                onChangeText={setDescription}
+                placeholder={placeholders.description}
+                placeholderTextColor="#9CA3AF"
+                multiline
+                maxLength={500}
+                textAlignVertical="top"
+              />
+              <Text style={styles.characterCount}>
+                {description.length}/500
+              </Text>
+            </View>
+
+            {/* Change Type Button */}
+            <TouchableOpacity
+              style={styles.changeTypeButton}
+              onPress={() => setSelectedType(null)}
+            >
+              <Text style={styles.changeTypeText}>Change Type</Text>
+            </TouchableOpacity>
           </View>
         )}
+      </ScrollView>
 
-        {/* Team Selection Info */}
-        <View style={styles.teamInfoContainer}>
-          <Text style={styles.teamInfoLabel}>
-            Will be posted to: {selectedTeams.length > 0 ? selectedTeams[0].name : 'No team selected'}
-          </Text>
-          {selectedTeams.length > 1 && (
-            <Text style={styles.teamInfoSubtext}>
-              (First selected team: {selectedTeams[0].name})
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Title</Text>
-          <TextInput
-            style={styles.titleInput}
-            value={title}
-            onChangeText={setTitle}
-            placeholder={typeInfo.titlePlaceholder}
-            placeholderTextColor="#9CA3AF"
-            maxLength={100}
-          />
-          <Text style={styles.characterCount}>
-            {title.length}/100
-          </Text>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Description</Text>
-          <TextInput
-            style={styles.descriptionInput}
-            value={description}
-            onChangeText={setDescription}
-            placeholder={typeInfo.descriptionPlaceholder}
-            placeholderTextColor="#9CA3AF"
-            multiline
-            maxLength={500}
-            textAlignVertical="top"
-          />
-          <Text style={styles.characterCount}>
-            {description.length}/500
-          </Text>
-        </View>
-      </View>
-
-      {/* Save Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.saveButtonLarge}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          <LinearGradient
-            colors={loading ? ['#9CA3AF', '#9CA3AF'] : [typeInfo.color, typeInfo.color]}
-            style={styles.saveButtonGradient}
+      {/* Save Button (when type is selected) */}
+      {selectedType && (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+          <TouchableOpacity
+            style={styles.saveButtonLarge}
+            onPress={handleSave}
+            disabled={loading}
           >
-            <Text style={styles.saveButtonText}>
-              {loading ? 'Saving...' : `Save ${typeInfo.title}`}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+            <LinearGradient
+              colors={loading ? ['#9CA3AF', '#9CA3AF'] : selectedOption?.gradient || ['#6366F1', '#3B82F6']}
+              style={styles.saveButtonGradient}
+            >
+              <Text style={styles.saveButtonText}>
+                {loading ? 'Saving...' : `Save ${selectedOption?.title}`}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -243,18 +332,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  typeIndicator: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
@@ -271,8 +348,14 @@ const styles = StyleSheet.create({
   saveButtonDisabled: {
     opacity: 0.5,
   },
-  imageContainer: {
+  headerRight: {
+    width: 40,
+  },
+  content: {
     flex: 1,
+  },
+  imageContainer: {
+    height: height * 0.4,
     margin: 20,
     borderRadius: 16,
     overflow: 'hidden',
@@ -282,12 +365,74 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  inputContainer: {
+  typeSelectionContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    marginTop: -24,
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    color: '#1F2937',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  typeOptions: {
+    gap: 16,
+  },
+  typeOption: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  typeOptionGradient: {
+    padding: 24,
+  },
+  typeOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  typeOptionIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  typeOptionText: {
+    flex: 1,
+  },
+  typeOptionTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  typeOptionDescription: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 22,
+  },
+  formContainer: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    paddingBottom: 0,
+    marginTop: -24,
+    flex: 1,
   },
   errorContainer: {
     backgroundColor: '#FEF2F2',
@@ -359,10 +504,23 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 4,
   },
+  changeTypeButton: {
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  changeTypeText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
   footer: {
     backgroundColor: '#FFFFFF',
     padding: 20,
-    paddingBottom: 40,
+    paddingTop: 16,
   },
   saveButtonLarge: {
     width: '100%',
