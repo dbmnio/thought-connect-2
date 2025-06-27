@@ -83,8 +83,8 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
-    paddingTop: 44, // Reduced from 50
-    paddingBottom: 8, // Reduced from 16
+    paddingTop: 16, // Significantly reduced from 44
+    paddingBottom: 8,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    fontSize: 20, // Reduced from 24
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#6366F1',
   },
@@ -103,13 +103,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    paddingHorizontal: 10, // Reduced from 12
-    paddingVertical: 6, // Reduced from 8
-    borderRadius: 16, // Reduced from 20
-    gap: 4, // Reduced from 6
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
   },
   teamText: {
-    fontSize: 12, // Reduced from 14
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#6366F1',
   },
