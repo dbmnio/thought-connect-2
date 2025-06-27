@@ -24,6 +24,10 @@ function TabHeader() {
     router.push('/(app)/user-profile');
   };
 
+  const handleTeamFilterPress = () => {
+    router.push('/(app)/team-filter');
+  };
+
   return (
     <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
       <View style={styles.headerContent}>
@@ -40,10 +44,10 @@ function TabHeader() {
           />
         </TouchableOpacity>
 
-        {/* Team Selection Button */}
+        {/* Team Filter Button */}
         <TouchableOpacity
           style={styles.teamButton}
-          onPress={() => router.push('/(app)/team-change')}
+          onPress={handleTeamFilterPress}
           activeOpacity={0.7}
         >
           <Users color="#6366F1" size={14} />
