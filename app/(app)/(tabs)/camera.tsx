@@ -12,6 +12,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Camera as CameraIcon, RotateCcw, X } from 'lucide-react-native';
+import * as FileSystem from 'expo-file-system';
 
 const { width, height } = Dimensions.get('window');
 
@@ -58,10 +59,21 @@ export default function Camera() {
       });
 
       if (photo) {
+        const photoDirectory = `${FileSystem.documentDirectory}photos/`;
+        const fileInfo = await FileSystem.getInfoAsync(photoDirectory);
+        if (!fileInfo.exists) {
+          await FileSystem.makeDirectoryAsync(photoDirectory, { intermediates: true });
+        }
+        const newImageUri = `${photoDirectory}${Date.now()}.jpg`;
+        await FileSystem.copyAsync({
+          from: photo.uri,
+          to: newImageUri,
+        });
+
         router.push({
           pathname: '/(app)/photo-editor',
           params: {
-            imageUri: photo.uri,
+            imageUri: newImageUri,
           },
         });
       }
