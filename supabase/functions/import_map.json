@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "openai": "https://esm.sh/openai@4.24.1",
+    "https://deno.land/x/create_serve/mod.ts": "https://deno.land/x/create_serve@v1.0.0/mod.ts"
+  }
+} 

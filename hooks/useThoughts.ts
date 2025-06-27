@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
@@ -9,6 +9,8 @@ type Thought = Database['public']['Tables']['thoughts']['Row'] & {
   team_name: string;
   answer_count: number;
   time_ago: string;
+  ai_description: string | null;
+  embedding_status: string | null;
 };
 
 export function useThoughts() {
@@ -17,19 +19,39 @@ export function useThoughts() {
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const handleThoughtUpdate = (payload: any) => {
+    setThoughts((currentThoughts) =>
+      currentThoughts.map((thought) =>
+        thought.id === payload.new.id ? { ...thought, ...payload.new } : thought
+      )
+    );
+  };
+
   useEffect(() => {
     if (user && selectedTeams.length > 0) {
       fetchThoughts();
     }
+
+    const channel = supabase
+      .channel('thoughts-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'thoughts' },
+        handleThoughtUpdate
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, selectedTeams]);
 
-  const fetchThoughts = async () => {
+  const fetchThoughts = useCallback(async () => {
     if (!user || selectedTeams.length === 0) return;
 
     try {
       setLoading(true);
       
-      // Get team IDs from selected teams
       const teamIds = selectedTeams.map(team => team.id);
       
       const { data, error } = await supabase
@@ -46,7 +68,6 @@ export function useThoughts() {
 
       const thoughtsWithMetadata = await Promise.all(
         data.map(async (thought) => {
-          // Count answers for questions
           let answerCount = 0;
           if (thought.type === 'question') {
             const { count } = await supabase
@@ -56,7 +77,6 @@ export function useThoughts() {
             answerCount = count || 0;
           }
 
-          // Calculate time ago
           const timeAgo = getTimeAgo(new Date(thought.created_at));
 
           return {
@@ -69,13 +89,14 @@ export function useThoughts() {
         })
       );
 
-      setThoughts(thoughtsWithMetadata);
+      // Cast to Thought[] to satisfy TypeScript
+      setThoughts(thoughtsWithMetadata as Thought[]);
     } catch (error) {
       console.error('Error fetching thoughts:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedTeams]);
 
   const createThought = async (
     type: 'question' | 'answer' | 'document',
@@ -86,11 +107,10 @@ export function useThoughts() {
   ) => {
     if (!user || selectedTeams.length === 0) throw new Error('User or teams not available');
 
-    // Use the first selected team for creating new thoughts
     const targetTeam = selectedTeams[0];
 
     try {
-      const { data, error } = await supabase
+      const { data: newThought, error } = await supabase
         .from('thoughts')
         .insert({
           user_id: user.id,
@@ -106,9 +126,19 @@ export function useThoughts() {
         .single();
 
       if (error) throw error;
+      if (!newThought) throw new Error("Thought creation failed.");
 
-      await fetchThoughts();
-      return data;
+      // Manually add the new thought to the local state to avoid a full refresh
+      // This provides a faster UI update. The realtime subscription will handle subsequent updates.
+      await fetchThoughts(); 
+
+      // Asynchronously trigger the embedding generation
+      // This is a "fire-and-forget" operation from the client's perspective
+      supabase.functions.invoke('generate-thought-embedding', {
+        body: { thought_id: newThought.id },
+      });
+
+      return newThought;
     } catch (error) {
       throw error;
     }
