@@ -14,26 +14,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  ArrowLeft, 
-  MessageCircle, 
-  Heart, 
-  Share2, 
-  MoreHorizontal,
-  Send,
-  Camera,
-  Paperclip,
-  CheckCircle,
-  Clock,
-  User,
-  FileText,
-  MessageSquare,
-  CircleHelp as HelpCircle,
-  Plus,
-  Bookmark,
-  Flag,
-  Eye,
-} from 'lucide-react-native';
+import { ArrowLeft, MessageCircle, Heart, Share2, MoveHorizontal as MoreHorizontal, Send, Camera, Paperclip, CircleCheck as CheckCircle, Clock, User, FileText, MessageSquare, CircleHelp as HelpCircle, Plus, Bookmark, Flag, Eye } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useThoughts } from '@/hooks/useThoughts';
