@@ -153,7 +153,7 @@ export default function TeamChange() {
                         currentTeam?.id === team.id && styles.teamMembersActive,
                       ]}
                     >
-                      {team.members.length} member{team.members.length !== 1 ? 's' : ''}
+                      {team.member_count} member{team.member_count !== 1 ? 's' : ''}
                     </Text>
                   </View>
                 </View>
