@@ -38,12 +38,6 @@ function TabHeader() {
             name={profile?.full_name || 'User'}
             size="small"
           />
-          <View style={styles.profileInfo}>
-            <Text style={styles.greeting}>Good morning</Text>
-            <Text style={styles.userName} numberOfLines={1}>
-              {profile?.full_name?.split(' ')[0] || 'User'}
-            </Text>
-          </View>
         </TouchableOpacity>
 
         {/* Team Selection Button */}
