@@ -12,25 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  ArrowLeft, 
-  Settings, 
-  Users, 
-  UserPlus, 
-  Mail, 
-  Crown, 
-  Shield, 
-  Trash2, 
-  Edit3, 
-  Save, 
-  X, 
-  Check, 
-  AlertTriangle,
-  Camera,
-  MoreVertical,
-  UserMinus,
-  LogOut,
-} from 'lucide-react-native';
+import { ArrowLeft, Settings, Users, UserPlus, Mail, Crown, Shield, Trash2, CreditCard as Edit3, Save, X, Check, TriangleAlert as AlertTriangle, Camera, MoveVertical as MoreVertical, UserMinus, LogOut } from 'lucide-react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
