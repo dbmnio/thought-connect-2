@@ -244,6 +244,8 @@ export default function UserProfile() {
           </TouchableOpacity>
         </View>
 
+        {/* Team create section */}
+        <View>
         <TouchableOpacity
             style={styles.teamManagementButton}
             onPress={() => router.push('/(app)/stub')}
