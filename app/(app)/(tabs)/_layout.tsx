@@ -16,7 +16,7 @@ function TabHeader() {
           style={styles.teamButton}
           onPress={() => router.push('/(app)/team-change')}
         >
-          <Users color="#6366F1" size={20} />
+          <Users color="#6366F1" size={16} />
           <Text style={styles.teamText}>{currentTeam?.name || 'Personal'}</Text>
         </TouchableOpacity>
       </View>
@@ -83,8 +83,8 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
-    paddingTop: 50,
-    paddingBottom: 16,
+    paddingTop: 44, // Reduced from 50
+    paddingBottom: 8, // Reduced from 16
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    fontSize: 24,
+    fontSize: 20, // Reduced from 24
     fontFamily: 'Inter-Bold',
     color: '#6366F1',
   },
@@ -103,13 +103,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: 10, // Reduced from 12
+    paddingVertical: 6, // Reduced from 8
+    borderRadius: 16, // Reduced from 20
+    gap: 4, // Reduced from 6
   },
   teamText: {
-    fontSize: 14,
+    fontSize: 12, // Reduced from 14
     fontFamily: 'Inter-Medium',
     color: '#6366F1',
   },
