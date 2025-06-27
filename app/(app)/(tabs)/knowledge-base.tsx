@@ -205,45 +205,6 @@ export default function KnowledgeBase() {
 
   return (
     <View style={styles.container}>
-      {/* Header Tabs */}
-      <View style={styles.headerTabs}>
-        <TouchableOpacity
-          style={[styles.tab, mode === 'chat' && styles.activeTab]}
-          onPress={() => {
-            setMode('chat');
-            setInputText('');
-            setSearchResults([]);
-            setSearchQuery('');
-          }}
-          activeOpacity={0.7}
-        >
-          <Bot color={mode === 'chat' ? '#FFFFFF' : '#6B7280'} size={20} />
-          <Text style={[styles.tabText, mode === 'chat' && styles.activeTabText]}>
-            AI Chat
-          </Text>
-          <Text style={[styles.tabSubtext, mode === 'chat' && styles.activeTabSubtext]}>
-            Ask questions with RAG
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, mode === 'search' && styles.activeTab]}
-          onPress={() => {
-            setMode('search');
-            setInputText('');
-          }}
-          activeOpacity={0.7}
-        >
-          <Search color={mode === 'search' ? '#FFFFFF' : '#6B7280'} size={20} />
-          <Text style={[styles.tabText, mode === 'search' && styles.activeTabText]}>
-            Search
-          </Text>
-          <Text style={[styles.tabSubtext, mode === 'search' && styles.activeTabSubtext]}>
-            Find specific content
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       <KeyboardAvoidingView
         style={styles.contentContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -315,13 +276,13 @@ export default function KnowledgeBase() {
         ) : (
           // Search Mode
           <>
-            <View style={styles.searchHeader}>
-              {searchQuery && (
+            {searchQuery && (
+              <View style={styles.searchHeader}>
                 <Text style={styles.searchResultsCount}>
                   {searchLoading ? 'Searching...' : `${searchResults.length} results found`}
                 </Text>
-              )}
-            </View>
+              </View>
+            )}
 
             <FlatList
               data={searchResults}
@@ -358,8 +319,48 @@ export default function KnowledgeBase() {
           </>
         )}
 
-        {/* Input Container */}
+        {/* Input Container with Icon Toggle */}
         <View style={styles.inputContainer}>
+          {/* Mode Toggle Icons */}
+          <View style={styles.modeToggle}>
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                mode === 'chat' && styles.modeButtonActive,
+              ]}
+              onPress={() => {
+                setMode('chat');
+                setInputText('');
+                setSearchResults([]);
+                setSearchQuery('');
+              }}
+              activeOpacity={0.7}
+            >
+              <Bot 
+                color={mode === 'chat' ? '#FFFFFF' : '#9CA3AF'} 
+                size={20} 
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.modeButton,
+                mode === 'search' && styles.modeButtonActiveSearch,
+              ]}
+              onPress={() => {
+                setMode('search');
+                setInputText('');
+              }}
+              activeOpacity={0.7}
+            >
+              <Search 
+                color={mode === 'search' ? '#FFFFFF' : '#9CA3AF'} 
+                size={20} 
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Text Input */}
           <TextInput
             style={styles.textInput}
             value={inputText}
@@ -386,11 +387,7 @@ export default function KnowledgeBase() {
               }
               style={styles.sendButtonGradient}
             >
-              {mode === 'chat' ? (
-                <Send color="#FFFFFF" size={20} />
-              ) : (
-                <Search color="#FFFFFF" size={20} />
-              )}
+              <Send color="#FFFFFF" size={20} />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -403,49 +400,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-  },
-  headerTabs: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  activeTab: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
-  },
-  tabText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#6B7280',
-    marginTop: 8,
-    marginBottom: 2,
-  },
-  activeTabText: {
-    color: '#FFFFFF',
-  },
-  tabSubtext: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#9CA3AF',
-    textAlign: 'center',
-  },
-  activeTabSubtext: {
-    color: 'rgba(255, 255, 255, 0.8)',
   },
   contentContainer: {
     flex: 1,
@@ -637,6 +591,26 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     gap: 12,
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    padding: 2,
+  },
+  modeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  modeButtonActive: {
+    backgroundColor: '#6366F1',
+  },
+  modeButtonActiveSearch: {
+    backgroundColor: '#F59E0B',
   },
   textInput: {
     flex: 1,
