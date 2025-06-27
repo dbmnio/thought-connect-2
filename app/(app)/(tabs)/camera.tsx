@@ -75,7 +75,6 @@ export default function Camera() {
         {/* Header Controls */}
         <View style={styles.headerControls}>
           <View style={styles.headerLeft} />
-          <Text style={styles.headerTitle}>Capture Thought</Text>
           <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
             <RotateCcw color="#FFFFFF" size={24} />
           </TouchableOpacity>
