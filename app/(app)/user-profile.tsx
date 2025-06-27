@@ -249,7 +249,7 @@ export default function UserProfile() {
             onPress={() => router.push('/(app)/stub')}
             activeOpacity={0.7}
           >
-            <LinearGradient colors={['#6366F1', '#3B82F6']} style={styles.teamManagementGradient}>
+            <LinearGradient colors={['#870C0C', '#ED7253']} style={styles.teamManagementGradient}>
               <View style={styles.teamManagementContent}>
                 <View style={styles.teamManagementLeft}>
                   <View style={styles.teamManagementIcon}>
