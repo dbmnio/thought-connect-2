@@ -408,26 +408,6 @@ export default function TeamChange() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {/* User Info */}
-        <View style={styles.userCard}>
-          <Avatar
-            uri={profile?.avatar_url}
-            name={profile?.full_name}
-            size="large"
-          />
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{profile?.full_name || 'User'}</Text>
-            <Text style={styles.userEmail}>{profile?.email || user?.email}</Text>
-            <View style={styles.userStats}>
-              <Text style={styles.userStat}>{allTeams.length} teams</Text>
-              <Text style={styles.userStatDivider}>•</Text>
-              <Text style={styles.userStat}>{pendingInvitations.length} invitations</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <LogOut color="#EF4444" size={20} />
-          </TouchableOpacity>
-        </View>
 
         {/* Error Display */}
         {error && (
