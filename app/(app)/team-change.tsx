@@ -17,7 +17,7 @@ import { useTeam } from '@/hooks/useTeam';
 
 export default function TeamChange() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { currentTeam, teams, switchTeam, createTeam } = useTeam();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -109,12 +109,12 @@ export default function TeamChange() {
         <View style={styles.userCard}>
           <View style={styles.userAvatar}>
             <Text style={styles.userAvatarText}>
-              {user?.name.charAt(0).toUpperCase()}
+              {profile?.full_name?.charAt(0).toUpperCase() || 'U'}
             </Text>
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text style={styles.userName}>{profile?.full_name || 'User'}</Text>
+            <Text style={styles.userEmail}>{profile?.email || user?.email}</Text>
           </View>
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
             <LogOut color="#EF4444" size={20} />
