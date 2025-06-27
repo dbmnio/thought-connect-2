@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Brain, Camera, MessageSquare, Users, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTeam } from '@/hooks/useTeam';
@@ -30,21 +30,6 @@ function TabHeader() {
           <ChevronDown color="#6366F1" size={14} />
         </TouchableOpacity>
       </View>
-      
-      {selectedTeams.length > 1 && (
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.selectedTeamsContainer}
-          contentContainerStyle={styles.selectedTeamsContent}
-        >
-          {selectedTeams.map((team, index) => (
-            <View key={team.id} style={styles.teamChip}>
-              <Text style={styles.teamChipText}>{team.name}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      )}
     </View>
   );
 }
@@ -109,7 +94,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
@@ -118,7 +103,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
   logo: {
     fontSize: 20,
@@ -140,25 +124,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#6366F1',
     flex: 1,
-  },
-  selectedTeamsContainer: {
-    marginTop: 4,
-  },
-  selectedTeamsContent: {
-    gap: 6,
-    paddingRight: 20,
-  },
-  teamChip: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-  },
-  teamChipText: {
-    fontSize: 10,
-    fontFamily: 'Inter-Medium',
-    color: '#3B82F6',
   },
 });
