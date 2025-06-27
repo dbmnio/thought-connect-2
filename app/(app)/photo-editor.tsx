@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, CircleHelp as HelpCircle, MessageSquare, FileText } from 'lucide-react-native';
+import { ArrowLeft, CircleHelp as HelpCircle, MessageSquare, FileText, Users, ChevronDown } from 'lucide-react-native';
 import { useThoughts } from '@/hooks/useThoughts';
 import { useTeam } from '@/hooks/useTeam';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,7 +23,7 @@ interface TypeOption {
   type: ThoughtType;
   icon: any;
   color: string;
-  gradient: string[];
+  label: string;
 }
 
 const typeOptions: TypeOption[] = [
@@ -31,19 +31,19 @@ const typeOptions: TypeOption[] = [
     type: 'question',
     icon: HelpCircle,
     color: '#EF4444',
-    gradient: ['#EF4444', '#DC2626'],
+    label: 'Question',
   },
   {
     type: 'answer',
     icon: MessageSquare,
     color: '#10B981',
-    gradient: ['#10B981', '#059669'],
+    label: 'Answer',
   },
   {
     type: 'document',
     icon: FileText,
     color: '#F59E0B',
-    gradient: ['#F59E0B', '#D97706'],
+    label: 'Document',
   },
 ];
 
@@ -95,6 +95,13 @@ export default function PhotoEditor() {
     }
   };
 
+  const getDisplayText = () => {
+    if (selectedTeams.length === 0) return 'No Teams';
+    if (selectedTeams.length === 1) return selectedTeams[0].name;
+    if (selectedTeams.length === 2) return `${selectedTeams[0].name} + 1 more`;
+    return `${selectedTeams[0].name} + ${selectedTeams.length - 1} more`;
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -105,56 +112,53 @@ export default function PhotoEditor() {
         
         <Text style={styles.headerTitle}>Choose Type</Text>
 
-        <View style={styles.headerRight} />
+        {/* Team Display */}
+        <View style={styles.teamButton}>
+          <Users color="#6366F1" size={16} />
+          <Text style={styles.teamText} numberOfLines={1}>
+            {getDisplayText()}
+          </Text>
+          <ChevronDown color="#6366F1" size={14} />
+        </View>
       </View>
 
-      {/* Full Screen Image with Type Selection */}
+      {/* Full Screen Image */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: imageUri }} style={styles.image} />
-        
-        {/* Dark Overlay for Better Button Visibility */}
-        <View style={styles.overlay} />
-        
-        {/* Team Info */}
-        <View style={styles.teamInfo}>
-          <Text style={styles.teamInfoText}>
-            Posting to: {selectedTeams.length > 0 ? selectedTeams[0].name : 'No team selected'}
-          </Text>
-        </View>
+      </View>
 
-        {/* Type Selection Buttons */}
-        <View style={styles.typeSelectionContainer}>
-          <Text style={styles.instructionText}>What type of content is this?</Text>
+      {/* Tab-Style Type Selection Bar */}
+      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4 }]}>
+        {typeOptions.map((option) => {
+          const IconComponent = option.icon;
+          const isLoading = loading === option.type;
+          const isActive = false; // No active state needed for this use case
           
-          <View style={styles.typeButtonsContainer}>
-            {typeOptions.map((option) => {
-              const IconComponent = option.icon;
-              const isLoading = loading === option.type;
-              
-              return (
-                <TouchableOpacity
-                  key={option.type}
+          return (
+            <TouchableOpacity
+              key={option.type}
+              style={styles.tabButton}
+              onPress={() => handleTypeSelect(option.type)}
+              disabled={loading !== null}
+              activeOpacity={0.7}
+            >
+              <View style={styles.tabButtonContent}>
+                <IconComponent 
+                  color={isLoading ? '#9CA3AF' : option.color} 
+                  size={20} 
+                />
+                <Text 
                   style={[
-                    styles.typeButton,
-                    isLoading && styles.typeButtonLoading,
+                    styles.tabButtonText,
+                    { color: isLoading ? '#9CA3AF' : option.color }
                   ]}
-                  onPress={() => handleTypeSelect(option.type)}
-                  disabled={loading !== null}
-                  activeOpacity={0.8}
                 >
-                  <LinearGradient
-                    colors={isLoading ? ['#9CA3AF', '#6B7280'] : option.gradient}
-                    style={styles.typeButtonGradient}
-                  >
-                    <View style={styles.typeButtonContent}>
-                      <IconComponent color="#FFFFFF" size={40} />
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+                  {isLoading ? 'Saving...' : option.label}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -191,88 +195,52 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
-  headerRight: {
-    width: 40,
+  teamButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+    maxWidth: 140,
+  },
+  teamText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6366F1',
+    flex: 1,
   },
   imageContainer: {
     flex: 1,
-    position: 'relative',
   },
   image: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 4,
+    height: 60,
   },
-  teamInfo: {
-    position: 'absolute',
-    top: 120,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+  tabButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 8,
   },
-  teamInfoText: {
-    fontSize: 14,
+  tabButtonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabButtonText: {
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
-    color: '#FFFFFF',
+    marginTop: 2,
     textAlign: 'center',
-  },
-  typeSelectionContainer: {
-    position: 'absolute',
-    bottom: 60,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-  },
-  instructionText: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 32,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  typeButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    gap: 12,
-  },
-  typeButton: {
-    flex: 1,
-    height: 140,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  typeButtonLoading: {
-    opacity: 0.8,
-  },
-  typeButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  typeButtonContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
   },
 });
