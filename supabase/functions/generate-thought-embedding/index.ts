@@ -6,6 +6,8 @@ import OpenAI from 'https://esm.sh/openai@4.24.1';
 console.log('Imported openai');
 import { serve } from 'https://deno.land/std@0.224.0/http/mod.ts';
 console.log('Imported std/http');
+import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts';
+console.log('Imported std/encoding/base64');
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -46,6 +48,26 @@ Deno.serve(async (req: Request) => {
       throw new Error('thought_id is required');
     }
 
+    // First, fetch the thought to check its current status
+    const { data: initialThought, error: initialError } = await supabaseAdmin
+      .from('thoughts')
+      .select('embedding_status')
+      .eq('id', thought_id)
+      .single();
+
+    if (initialError) {
+      throw new Error(`Failed to fetch thought: ${initialError.message}`);
+    }
+
+    // If the embedding is already processed or in progress, exit early.
+    if (initialThought.embedding_status === 'completed' || initialThought.embedding_status === 'processing' || initialThought.embedding_status === 'failed') {
+      console.log(`Embedding for thought ${thought_id} is already processed, in progress, or failed. Exiting.`);
+      return new Response(JSON.stringify({ success: true, message: `Embedding status is already '${initialThought.embedding_status}'.` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     // 1. Update thought status to 'processing'
     console.log('Updating thought status to processing');
     await supabaseAdmin
@@ -83,7 +105,8 @@ Deno.serve(async (req: Request) => {
     }
 
     // Convert blob to base64
-    const imageBase64 = await imageBlob.arrayBuffer().then((buffer: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buffer))));
+    const arrayBuffer = await imageBlob.arrayBuffer();
+    const imageBase64 = encodeBase64(arrayBuffer);
 
     // 4. Generate AI description from the image
     console.log('Generating AI description from the image');
