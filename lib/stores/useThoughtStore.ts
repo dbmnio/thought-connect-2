@@ -13,10 +13,17 @@ type Thought = Database['public']['Tables']['thoughts']['Row'] & {
   embedding_status: string | null;
 };
 
+interface CapturedImage {
+  uri: string;
+  base64?: string;
+}
+
 interface ThoughtState {
   thoughts: Thought[];
   loading: boolean;
+  capturedImage: CapturedImage | null;
   fetchThoughts: (teamIds: string[]) => Promise<void>;
+  setCapturedImage: (image: CapturedImage | null) => void;
   createThought: (
     thoughtData: {
       type: 'question' | 'answer' | 'document';
@@ -46,6 +53,9 @@ const getTimeAgo = (date: Date): string => {
 export const useThoughtStore = create<ThoughtState>((set, get) => ({
   thoughts: [],
   loading: false,
+  capturedImage: null,
+
+  setCapturedImage: (image) => set({ capturedImage: image }),
 
   fetchThoughts: async (teamIds: string[]) => {
     if (teamIds.length === 0) return;

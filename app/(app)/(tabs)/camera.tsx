@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Camera as CameraIcon, RotateCcw, X } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system';
+import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ export default function Camera() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
+  const setCapturedImage = useThoughtStore((state) => state.setCapturedImage);
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -53,29 +55,40 @@ export default function Camera() {
     if (!cameraRef.current) return;
 
     try {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
-        base64: false,
-      });
+      if (Platform.OS === 'web') {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+          base64: true,
+        });
 
-      if (photo) {
-        const photoDirectory = `${FileSystem.documentDirectory}photos/`;
-        const fileInfo = await FileSystem.getInfoAsync(photoDirectory);
-        if (!fileInfo.exists) {
-          await FileSystem.makeDirectoryAsync(photoDirectory, { intermediates: true });
+        if (photo && photo.base64) {
+          setCapturedImage({
+            uri: `data:image/jpeg;base64,${photo.base64}`,
+            base64: photo.base64,
+          });
+          router.push('/(app)/photo-editor');
         }
-        const newImageUri = `${photoDirectory}${Date.now()}.jpg`;
-        await FileSystem.copyAsync({
-          from: photo.uri,
-          to: newImageUri,
+      } else {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+          base64: false,
         });
 
-        router.push({
-          pathname: '/(app)/photo-editor',
-          params: {
-            imageUri: newImageUri,
-          },
-        });
+        if (photo) {
+          const photoDirectory = `${FileSystem.documentDirectory}photos/`;
+          const fileInfo = await FileSystem.getInfoAsync(photoDirectory);
+          if (!fileInfo.exists) {
+            await FileSystem.makeDirectoryAsync(photoDirectory, { intermediates: true });
+          }
+          const newImageUri = `${photoDirectory}${Date.now()}.jpg`;
+          await FileSystem.copyAsync({
+            from: photo.uri,
+            to: newImageUri,
+          });
+
+          setCapturedImage({ uri: newImageUri });
+          router.push('/(app)/photo-editor');
+        }
       }
     } catch (error) {
       console.error('Failed to take picture:', error);

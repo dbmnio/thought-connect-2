@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +16,9 @@ import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 import { useTeam } from '@/hooks/useTeam';
 import { useAuth } from '@/hooks/useAuth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { supabase } from '@/lib/supabase';
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 
 const { width, height } = Dimensions.get('window');
 
@@ -50,15 +54,20 @@ const typeOptions: TypeOption[] = [
 
 export default function PhotoEditor() {
   const router = useRouter();
-  const { imageUri } = useLocalSearchParams<{
-    imageUri: string;
-  }>();
-
+  const { capturedImage, setCapturedImage } = useThoughtStore();
+  
   const [loading, setLoading] = useState<ThoughtType | null>(null);
   const { createThought } = useThoughtStore();
   const { selectedTeams } = useTeam();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    // Cleanup captured image from store on unmount
+    return () => {
+      setCapturedImage(null);
+    };
+  }, []);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -77,6 +86,38 @@ export default function PhotoEditor() {
     setLoading(type);
 
     try {
+      if (!capturedImage) {
+        throw new Error('No image provided.');
+      }
+
+      if (!user) {
+        throw new Error('User not authenticated.');
+      }
+
+      let fileBase64: string;
+      if (Platform.OS === 'web' && capturedImage.base64) {
+        fileBase64 = capturedImage.base64;
+      } else {
+        fileBase64 = await FileSystem.readAsStringAsync(capturedImage.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      }
+      
+      const filePath = `${user.id}/${new Date().toISOString()}.jpg`;
+      const contentType = 'image/jpeg';
+      
+      const { data, error: uploadError } = await supabase.storage
+        .from('thoughts-images')
+        .upload(filePath, decode(fileBase64), { contentType });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('thoughts-images')
+        .getPublicUrl(filePath);
+
       // Generate a simple title based on type and timestamp
       const timestamp = new Date().toLocaleString();
       const title = `${type.charAt(0).toUpperCase() + type.slice(1)} - ${timestamp}`;
@@ -87,7 +128,7 @@ export default function PhotoEditor() {
           type,
           title,
           description,
-          imageUrl: imageUri,
+          imageUrl: publicUrl,
         },
         user,
         selectedTeams[0].id
@@ -107,6 +148,14 @@ export default function PhotoEditor() {
     if (selectedTeams.length === 2) return `${selectedTeams[0].name} + 1 more`;
     return `${selectedTeams[0].name} + ${selectedTeams.length - 1} more`;
   };
+  
+  if (!capturedImage) {
+    // This can happen if the user navigates here directly
+    // or if the state is lost. Redirect back to camera.
+    if (router.canGoBack()) router.back();
+    else router.replace('/(app)/(tabs)/camera');
+    return <View style={styles.container} />;
+  }
 
   return (
     <View style={styles.container}>
@@ -130,7 +179,7 @@ export default function PhotoEditor() {
 
       {/* Full Screen Image */}
       <View style={styles.imageContainer}>
-        <Image source={{ uri: imageUri }} style={styles.image} />
+        <Image key={capturedImage.uri} source={{ uri: capturedImage.uri }} style={styles.image} />
       </View>
 
       {/* Tab-Style Type Selection Bar */}
@@ -248,9 +297,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabButtonText: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
-    marginTop: 2,
-    textAlign: 'center',
+    marginTop: 4,
   },
 });

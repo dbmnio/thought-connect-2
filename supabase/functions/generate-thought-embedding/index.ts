@@ -70,8 +70,22 @@ Deno.serve(async (req: Request) => {
     }
 
     const imageUrl = thought.image_url;
+    const filePath = imageUrl.substring(imageUrl.lastIndexOf('thoughts-images/') + 'thoughts-images/'.length);
 
-    // 3. Generate AI description from the image
+    // 3. Download image from Supabase Storage
+    console.log('Downloading image from storage');
+    const { data: imageBlob, error: downloadError } = await supabaseAdmin.storage
+        .from('thoughts-images')
+        .download(filePath);
+    
+    if (downloadError || !imageBlob) {
+        throw new Error('Failed to download image from storage');
+    }
+
+    // Convert blob to base64
+    const imageBase64 = await imageBlob.arrayBuffer().then((buffer: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buffer))));
+
+    // 4. Generate AI description from the image
     console.log('Generating AI description from the image');
     const visionResponse = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -80,7 +94,12 @@ Deno.serve(async (req: Request) => {
           role: 'user',
           content: [
             { type: 'text', text: 'Provide a detailed, concise description of this image.' },
-            { type: 'image_url', image_url: { url: imageUrl } },
+            { 
+              type: 'image_url', 
+              image_url: { 
+                url: `data:image/jpeg;base64,${imageBase64}` 
+              } 
+            },
           ],
         },
       ],
@@ -93,7 +112,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Failed to generate AI description.');
     }
 
-    // 4. Generate embedding for the description
+    // 5. Generate embedding for the description
     console.log('Generating embedding for the description');
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
@@ -102,7 +121,7 @@ Deno.serve(async (req: Request) => {
 
     const embedding = embeddingResponse.data[0].embedding;
 
-    // 5. Update thought with description, embedding, and 'completed' status
+    // 6. Update thought with description, embedding, and 'completed' status
     console.log('Updating thought with description, embedding, and completed status');
     await supabaseAdmin
       .from('thoughts')
