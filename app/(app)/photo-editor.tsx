@@ -1,45 +1,23 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, Button, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Button, Image, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FileText, HelpCircle, MessageSquare, Undo2 } from 'lucide-react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Path } from 'react-native-svg';
-import Animated, { useSharedValue, useAnimatedProps, runOnJS } from 'react-native-reanimated';
-import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
-
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
-type ThoughtType = 'question' | 'answer' | 'document';
-
-interface TypeOption {
-  type: ThoughtType;
-  icon: any;
-  color: string;
-  label: string;
-}
-
-const typeOptions: TypeOption[] = [
-  {
-    type: 'question',
-    icon: HelpCircle,
-    color: '#EF4444',
-    label: 'Question',
-  },
-  {
-    type: 'answer',
-    icon: MessageSquare,
-    color: '#10B981',
-    label: 'Answer',
-  },
-  {
-    type: 'document',
-    icon: FileText,
-    color: '#F59E0B',
-    label: 'Document',
-  },
-];
+import * as FileSystem from 'expo-file-system';
+import { Buffer } from 'buffer';
+import {
+  Canvas,
+  Path,
+  Skia,
+  useCanvasRef,
+  Image as SkiaImage,
+  useImage,
+  rect,
+  fitbox,
+} from '@shopify/react-native-skia';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { runOnJS, useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 
 const PALETTE_COLORS = ['#EF4444', '#F59E0B', '#84CC16', '#3B82F6', '#A855F7', '#FFFFFF'];
 
@@ -74,6 +52,38 @@ function EditorToolbar({ selectedColor, onColorChange, onUndo }: EditorToolbarPr
   );
 }
 
+type ThoughtType = 'question' | 'answer' | 'document';
+
+interface TypeOption {
+  type: ThoughtType;
+  icon: any;
+  color: string;
+  label: string;
+}
+
+const typeOptions: TypeOption[] = [
+  {
+    type: 'question',
+    icon: HelpCircle,
+    color: '#EF4444',
+    label: 'Question',
+  },
+  {
+    type: 'answer',
+    icon: MessageSquare,
+    color: '#10B981',
+    label: 'Answer',
+  },
+  {
+    type: 'document',
+    icon: FileText,
+    color: '#F59E0B',
+    label: 'Document',
+  },
+];
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
 /**
  * A screen for editing a photo before saving it as a thought.
  * Allows drawing on the image and selecting a thought type.
@@ -82,13 +92,45 @@ export default function PhotoEditorScreen() {
   const router = useRouter();
   const { uri } = useLocalSearchParams<{ uri: string }>();
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
   const [selectedType, setSelectedType] = useState<ThoughtType>('question');
-  const [paths, setPaths] = useState<{ d: string; color: string }[]>([]);
   const [currentColor, setCurrentColor] = useState(PALETTE_COLORS[0]);
-  const currentPath = useSharedValue('');
-  const currentPathColor = useSharedValue(PALETTE_COLORS[0]);
-  const viewShotRef = useRef(null);
+  const [paths, setPaths] = useState<{ path: any; color: string }[]>([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const currentPath = useSharedValue<any | null>(null);
+
+  const canvasRef = useCanvasRef();
+  const skiaImage = useImage(uri);
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+
+  const addPath = useCallback((path: any) => {
+    setPaths(prev => [...prev, { path, color: currentColor }]);
+  }, [currentColor]);
+
+  const panGesture = Gesture.Pan()
+    .onStart((g) => {
+      const newPath = Skia.Path.Make();
+      newPath.moveTo(g.x, g.y);
+      currentPath.value = newPath;
+      runOnJS(setIsDrawing)(true);
+    })
+    .onUpdate((g) => {
+      if (currentPath.value) {
+        const newPath = currentPath.value.copy();
+        newPath.lineTo(g.x, g.y);
+        currentPath.value = newPath;
+      }
+    })
+    .onEnd(() => {
+      if (currentPath.value) {
+        runOnJS(addPath)(currentPath.value);
+      }
+      runOnJS(setIsDrawing)(false);
+    });
+
+  const handleUndo = () => {
+    setPaths(prev => prev.slice(0, -1));
+  };
 
   const handleSave = async () => {
     if (!permissionResponse?.granted) {
@@ -100,11 +142,24 @@ export default function PhotoEditorScreen() {
     }
 
     try {
-      const localUri = await captureRef(viewShotRef, {
-        quality: 1,
-        format: 'jpg',
-      });
-      await MediaLibrary.saveToLibraryAsync(localUri);
+      // Temporarily clear the "live" path so it's not captured in the snapshot
+      const lastLivePath = currentPath.value;
+      currentPath.value = null;
+
+      const image = await canvasRef.current?.makeImageSnapshot();
+      
+      // Restore the live path
+      currentPath.value = lastLivePath;
+
+      if (!image) throw new Error('Failed to capture image');
+      
+      const bytes = image.encodeToBytes();
+      if (!bytes) throw new Error('Failed to encode image to bytes.');
+      
+      const tempPath = `${FileSystem.cacheDirectory}${Date.now()}.png`;
+      await FileSystem.writeAsStringAsync(tempPath, Buffer.from(bytes).toString('base64'), { encoding: FileSystem.EncodingType.Base64 });
+      await MediaLibrary.saveToLibraryAsync(tempPath);
+
       Alert.alert('Saved!', 'Your edited image has been saved to your photos.');
       router.back();
     } catch (e) {
@@ -113,113 +168,72 @@ export default function PhotoEditorScreen() {
     }
   };
 
-  const addPath = useCallback((pathData: {d: string, color: string}) => {
-    setPaths(prev => [...prev, pathData]);
-  }, []);
-
-  const handleUndo = useCallback(() => {
-    const lastPath = paths[paths.length - 1];
-    const newPaths = paths.slice(0, -1);
-    setPaths(newPaths);
-
-    // If the path we are undoing is the same as the one in the "live" layer,
-    // clear the live layer to make it disappear.
-    if (lastPath && lastPath.d === currentPath.value) {
-      currentPath.value = '';
-    }
-  }, [paths, currentPath]);
-
-  const pan = Gesture.Pan()
-    .onStart((g) => {
-      currentPath.value = `M${g.x} ${g.y}`;
-      currentPathColor.value = currentColor;
-    })
-    .onUpdate((g) => {
-      currentPath.value += ` L${g.x} ${g.y}`;
-    })
-    .onEnd(() => {
-      const pathData = { d: currentPath.value, color: currentPathColor.value };
-      runOnJS(addPath)(pathData);
-    });
-
-  const animatedProps = useAnimatedProps(() => ({
-    d: currentPath.value,
-    stroke: currentPathColor.value,
-  }));
+  const animatedProps = useAnimatedProps(() => {
+    return {
+      path: currentPath.value || Skia.Path.Make(),
+    };
+  });
 
   useEffect(() => {
     if (!uri) {
-      // This should not happen in a normal flow as navigation to this
-      // screen requires a URI. We navigate back if it's possible.
-      if (router.canGoBack()) {
-        router.back();
-      }
+      if (router.canGoBack()) router.back();
     }
   }, [uri, router]);
 
-  if (!uri) {
-    // Render nothing while we are about to navigate back.
+  if (!uri || !skiaImage) {
     return null;
   }
+  
+  const dst = rect(0, 0, 1080, 1920); // Example dimensions, adjust as needed
+  const src = rect(0, 0, skiaImage.width(), skiaImage.height());
+  const transform = fitbox('contain', src, dst);
 
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          headerShown: true,
-          headerTitle: 'Edit Photo',
-          headerLeft: () => (
-            <Button
-              onPress={() => {
-                router.back();
-              }}
-              title="Cancel"
-            />
-          ),
-          headerRight: () => (
-            <Button
-              onPress={handleSave}
-              title="Done"
-            />
-          ),
-          headerStyle: {
-            backgroundColor: '#000',
-          },
-          headerTintColor: '#fff',
+          headerShown: false,
         }}
       />
-      <GestureDetector gesture={pan}>
-        <View style={{ flex: 1 }} ref={viewShotRef} collapsable={false}>
-          <Image source={{ uri }} style={styles.image} resizeMode="contain" />
-          <Svg style={StyleSheet.absoluteFill}>
-            {paths.map((p, index) => (
-              <Path
-                key={index}
-                d={p.d}
-                stroke={p.color}
-                strokeWidth={5}
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-            <AnimatedPath
-              animatedProps={animatedProps}
+      <GestureDetector gesture={panGesture}>
+        <Canvas style={styles.canvas} ref={canvasRef}>
+          <SkiaImage image={skiaImage} x={0} y={0} width={width} height={height} fit="cover" />
+          {paths.map((p, index) => (
+            <Path
+              key={index}
+              path={p.path}
+              color={p.color}
+              style="stroke"
               strokeWidth={5}
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              strokeCap="round"
+              strokeJoin="round"
             />
-          </Svg>
-          <EditorToolbar
-            selectedColor={currentColor}
-            onColorChange={setCurrentColor}
-            onUndo={handleUndo}
-          />
-        </View>
+          ))}
+          {isDrawing && (
+            <AnimatedPath
+              path={Skia.Path.Make()}
+              animatedProps={animatedProps}
+              color={currentColor}
+              style="stroke"
+              strokeWidth={5}
+              strokeCap="round"
+              strokeJoin="round"
+            />
+          )}
+        </Canvas>
       </GestureDetector>
-
-      {/* Tab-Style Type Selection Bar */}
+      
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <Button onPress={() => router.back()} title="Cancel" color="#fff" />
+        <Button onPress={handleSave} title="Done" color="#fff" />
+      </View>
+      
+      <EditorToolbar
+        selectedColor={currentColor}
+        onColorChange={setCurrentColor}
+        onUndo={handleUndo}
+      />
+      
       <View style={[styles.tabBar, { paddingBottom: insets.bottom > 0 ? insets.bottom : 24 }]}>
         {typeOptions.map((option) => {
           const isActive = selectedType === option.type;
@@ -228,7 +242,8 @@ export default function PhotoEditorScreen() {
               key={option.type}
               style={styles.tabButton}
               onPress={() => setSelectedType(option.type)}
-              activeOpacity={0.7}>
+              activeOpacity={0.7}
+            >
               <View style={styles.tabButtonContent}>
                 <option.icon color={isActive ? option.color : '#9CA3AF'} size={24} />
                 <Text style={[styles.tabButtonText, { color: isActive ? option.color : '#9CA3AF' }]}>
@@ -248,18 +263,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'black',
   },
-  image: {
+  canvas: {
     flex: 1,
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    zIndex: 10,
   },
   toolbar: {
     position: 'absolute',
-    top: 20,
+    top: 80,
     right: 20,
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 24,
     padding: 8,
     alignItems: 'center',
     gap: 20,
+    zIndex: 10,
   },
   colorPalette: {
     gap: 16,
@@ -278,11 +304,16 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   tabBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     backgroundColor: 'rgba(0,0,0,0.8)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.1)',
     paddingTop: 12,
+    zIndex: 10,
   },
   tabButton: {
     flex: 1,
