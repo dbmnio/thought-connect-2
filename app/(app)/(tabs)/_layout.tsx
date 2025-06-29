@@ -17,8 +17,8 @@ function TabHeader() {
   const getDisplayText = () => {
     if (selectedTeams.length === 0) return 'No Teams';
     if (selectedTeams.length === 1) return selectedTeams[0].name;
-    if (selectedTeams.length === 2) return `${selectedTeams[0].name} + 1 more`;
-    return `${selectedTeams[0].name} + ${selectedTeams.length - 1} more`;
+    if (selectedTeams.length > 1) return `${selectedTeams.length} teams`;
+    return `Undefined`;
   };
 
   const handleProfilePress = () => {
@@ -33,17 +33,11 @@ function TabHeader() {
     <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
       <View style={styles.headerContent}>
         {/* User Profile Button */}
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={handleProfilePress}
-          activeOpacity={0.7}
-        >
-          <Avatar
-            uri={profile?.avatar_url}
-            name={profile?.full_name || 'User'}
-            size="small"
-          />
-        </TouchableOpacity>
+        <Avatar
+          uri={profile?.avatar_url}
+          name={profile?.full_name || 'User'}
+          size="small"
+        />
 
         {/* Team Filter Button */}
         <TouchableOpacity
@@ -55,18 +49,8 @@ function TabHeader() {
           <Text style={styles.teamText} numberOfLines={1}>
             {getDisplayText()}
           </Text>
-          <ChevronDown color="#6366F1" size={12} />
+          {/*<ChevronDown color="#6366F1" size={12} />*/}
         </TouchableOpacity>
-
-        {/* Temporary Test Button */}
-        {__DEV__ && (
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={() => router.push('/(app)/embedding-test')}
-          >
-            <Text style={styles.testButtonText}>Test</Text>
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
@@ -177,7 +161,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     gap: 4,
-    maxWidth: 140,
+    maxWidth: 100,
     borderWidth: 1,
     borderColor: 'rgba(229, 231, 235, 0.6)',
   },

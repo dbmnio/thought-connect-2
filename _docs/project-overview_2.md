@@ -51,7 +51,7 @@ There will also be a "see related" button at the bottom of the window which will
 #### Answer and document viewing window
 If user clicks on an answer or document, it displays the associated answer picture fullscreen.  On the screen there will be a button to upvote the image, which will be stored as metadata on the thought.  If the current user is also the user that submitted the image, there will also be a button to "accept" the answer, which will transition the question from being an open question to closed.  When a question is closed, no further answers or documents are able to be posted to the thread.  There will also be a "see related" button at the bottom of the window which will open a modal of related questions, found via vector database search.
 
---- # Phases
+# Phases
 Please split the implementation into two phases
 
 ## Phase 1: Core
@@ -66,8 +66,8 @@ Develop a complete writing assistant with the following essential features:
 - User authentication
 - App Start Page
 
---- ## Phase 2: AI Enhancement
+## Phase 2: AI Enhancement
 In this phase, implement the RAG features to search knowledge-base built up by thoughts (TBD)
 
---- ## Ultimate Goal
+## Ultimate Goal
 Deliver a next-generation snap chat like app for aiding students, researchers, and learners in their courses, by providing a low effort way to create and build their own knowledge bases, and to answer each others questions to aid each other in learning.
