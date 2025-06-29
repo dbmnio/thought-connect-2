@@ -33,11 +33,13 @@ function TabHeader() {
     <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
       <View style={styles.headerContent}>
         {/* User Profile Button */}
-        <Avatar
-          uri={profile?.avatar_url}
-          name={profile?.full_name || 'User'}
-          size="small"
-        />
+        <TouchableOpacity onPress={handleProfilePress} activeOpacity={0.7}>
+          <Avatar
+            uri={profile?.avatar_url}
+            name={profile?.full_name || 'User'}
+            size="small"
+          />
+        </TouchableOpacity>
 
         {/* Team Filter Button */}
         <TouchableOpacity
