@@ -15,6 +15,7 @@ export type Thought = Database['public']['Tables']['thoughts']['Row'] & {
   time_ago: string;
   ai_description: string | null;
   embedding_status: string | null;
+  similarity?: number;
 };
 
 type ThoughtCardProps = {
@@ -67,6 +68,13 @@ export function ThoughtCard({ thought }: ThoughtCardProps) {
             <Text style={styles.thoughtTime}>{thought.time_ago}</Text>
           </View>
         </View>
+        {thought.similarity !== undefined && (
+          <View style={styles.similarityBadge}>
+            <Text style={styles.similarityText}>
+              {Math.round(thought.similarity * 100)}%
+            </Text>
+          </View>
+        )}
         {thought.type === 'question' && thought.answer_count > 0 && (
           <View style={styles.answersBadge}>
             <Text style={styles.answersBadgeText}>{thought.answer_count}</Text>
@@ -142,6 +150,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
     marginTop: 2,
+  },
+  similarityBadge: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  similarityText: {
+    color: '#065F46',
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
   },
   answersBadge: {
     backgroundColor: '#6366F1',

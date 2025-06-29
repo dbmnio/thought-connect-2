@@ -82,3 +82,79 @@ Here is a logical sequence for building the feature:
     - [ ] Apply styles to the toolbar and its controls to match the application's clean and modern aesthetic, as described in `project-overview-4.md`.
     - [ ] Ensure the layout is responsive and works well on different screen sizes.
     - [ ] Add JSDoc comments to new functions and components to maintain code quality. 
+
+---
+
+### **Implementation Plan: AI Chat Feature**
+
+This plan outlines the steps to integrate a Retrieval-Augmented Generation (RAG) powered AI chat into the knowledge base page.
+
+---
+
+### **1. Backend: Supabase Edge Function for RAG**
+
+We will create a new, dedicated Edge Function to handle the entire RAG process.
+
+*   **Create New Edge Function:**
+    *   **Location:** `supabase/functions/ask-ai/index.ts`
+    *   **Purpose:** To orchestrate the RAG pipeline: receive a question, find relevant context from the database, and stream an AI-generated answer back to the client.
+    *   [✅] **Action Item:** Create the `ask-ai` edge function.
+
+*   **Function Logic (`ask-ai/index.ts`):**
+    1.  **Request Handling:** The function will accept a `POST` request with the body `{ question: string, teamIds: string[] }`. It must handle CORS preflight requests.
+    2.  **Generate Embedding:** Use the OpenAI API (`text-embedding-3-small` model) to create a vector embedding from the user's `question`.
+    3.  **Similarity Search (Retrieval):**
+        *   Invoke the `search_thoughts` database function from within the Edge Function.
+        *   Pass the `query_embedding` and the `teamIds` to the function to find relevant "thoughts" from the user's selected teams.
+    4.  **Prompt Construction (Augmentation):**
+        *   Create a system prompt that instructs the AI model to answer the user's question based *only* on the provided context (the retrieved thoughts).
+        *   Combine the system prompt, the retrieved context, and the user's `question` into a single prompt.
+    5.  **AI Chat Completion (Generation):**
+        *   Send the final prompt to the OpenAI Chat Completions API (e.g., `gpt-4o`).
+        *   **Crucially, enable streaming** in the API call to receive the response as a stream of tokens.
+    6.  **Stream Response:** Return a `ReadableStream` directly to the client, piping the response from OpenAI through the Edge Function. This ensures a real-time, "typing" effect in the UI.
+
+---
+
+### **2. Frontend: React Native UI & State Management**
+
+We will update the existing UI components and add a new state management store for the chat.
+
+*   **State Management (New File):**
+    *   **Location:** `lib/stores/useChatStore.ts`
+    *   **Technology:** Zustand
+    *   **State:** It will manage `messages` (an array of user and bot messages), `isLoading` (boolean), and `error` (string).
+    *   **Actions:** Provide actions to add messages and update the loading/error states.
+    *   [✅] **Action Item:** Create the `useChatStore`.
+
+*   **API Client Logic (New or Existing File):**
+    *   **Location:** `lib/api/chat.ts` (or similar)
+    *   **Purpose:** Create a function `askQuestion({ question, teamIds })` that calls the `ask-ai` Supabase Edge Function.
+    *   **Implementation:** This function will handle reading the streamed response from the Edge Function. As data chunks are received, it will continuously update the corresponding bot message in the `useChatStore`.
+    *   [✅] **Action Item:** Create the `askQuestion` API client.
+
+*   **UI Components:**
+    *   **`app/(app)/(tabs)/knowledge-base.tsx`:**
+        *   Use the `useTeam` hook to get the currently selected `teamIds`.
+        *   Pull `messages`, `isLoading`, and `error` from the `useChatStore` to pass down to child components.
+    *   **`components/knowledge-base/InputBar.tsx`:**
+        *   On send, add the user's message to `useChatStore`.
+        *   Call the `askQuestion` API client function with the message text and `teamIds`.
+    *   **`components/knowledge-base/ChatView.tsx`:**
+        *   Render the list of `messages` from the `useChatStore`.
+        *   Use `@shopify/flash-list` to efficiently display the conversation.
+        *   Show a loading indicator for the bot's message while `isLoading` is true.
+    *   [✅] **Action Item:** Update all UI components.
+
+---
+
+### **3. Data Flow Summary**
+
+1.  **UI (`InputBar`):** User submits a question.
+2.  **UI (`knowledge-base.tsx`):** The question and selected `teamIds` are sent to the `askQuestion` client API function.
+3.  **Client API (`askQuestion`):** Invokes the `ask-ai` Supabase Edge Function via `POST` request.
+4.  **Backend (`ask-ai`):** Executes the RAG pipeline (embed -> search -> prompt -> generate).
+5.  **OpenAI -> Backend:** OpenAI streams the answer back to the Edge Function.
+6.  **Backend -> Client:** The Edge Function streams the response to the React Native app.
+7.  **Client -> State:** The `askQuestion` function reads the stream and updates the `useChatStore` in real-time.
+8.  **State -> UI (`ChatView`):** The UI re-renders progressively as the bot's message is updated, creating a live typing effect. 

@@ -21,7 +21,10 @@ RETURNS TABLE (
   author_avatar_url text,
   team_name text,
   answer_count bigint,
-  similarity float
+  similarity float,
+  status text,
+  image_url text,
+  author_name text
 )
 LANGUAGE plpgsql
 AS $$
@@ -43,7 +46,10 @@ BEGIN
         FROM thought_associations ta
         WHERE ta.question_id = t.id
     ) AS answer_count,
-    1 - (t.embedding <=> query_embedding) AS similarity
+    1 - (t.embedding <=> query_embedding) AS similarity,
+    t.status::text,
+    t.image_url,
+    p.full_name as author_name
   FROM
     thoughts t
   JOIN

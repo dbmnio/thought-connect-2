@@ -1,52 +1,69 @@
+/**
+ * @file This file defines the ModeToggle component, which allows switching between chat and search modes.
+ */
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { Bot, Search } from 'lucide-react-native';
+import { MessageSquare, Search } from 'lucide-react-native';
 
 type ModeToggleProps = {
   mode: 'chat' | 'search';
   onModeChange: (mode: 'chat' | 'search') => void;
 };
 
+/**
+ * A component that renders a toggle switch for changing between chat and search modes.
+ *
+ * @param {ModeToggleProps} props - The props for the component.
+ * @param {string} props.mode - The current active mode ('chat' or 'search').
+ * @param {function} props.onModeChange - The function to call when the mode is changed.
+ * @returns {React.ReactElement} The rendered toggle component.
+ */
 export function ModeToggle({ mode, onModeChange }: ModeToggleProps) {
+  const isChatActive = mode === 'chat';
+  const isSearchActive = mode === 'search';
+
   return (
-    <View style={styles.modeToggle}>
+    <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.modeButton, mode === 'chat' && styles.modeButtonActive]}
+        style={[
+          styles.toggleButton,
+          isChatActive && styles.activeButton,
+          isChatActive && { backgroundColor: '#6366F1' },
+        ]}
         onPress={() => onModeChange('chat')}
-        activeOpacity={0.7}
       >
-        <Bot color={mode === 'chat' ? '#FFFFFF' : '#9CA3AF'} size={20} />
+        <MessageSquare size={22} color={isChatActive ? '#FFFFFF' : '#6B7280'} />
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.modeButton, mode === 'search' && styles.modeButtonActiveSearch]}
+        style={[
+          styles.toggleButton,
+          isSearchActive && styles.activeButton,
+          isSearchActive && { backgroundColor: '#F59E0B' },
+        ]}
         onPress={() => onModeChange('search')}
-        activeOpacity={0.7}
       >
-        <Search color={mode === 'search' ? '#FFFFFF' : '#9CA3AF'} size={20} />
+        <Search size={22} color={isSearchActive ? '#FFFFFF' : '#6B7280'} />
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  modeToggle: {
+  container: {
     flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#E5E7EB',
     borderRadius: 20,
     padding: 2,
   },
-  modeButton: {
-    width: 36,
-    height: 36,
+  toggleButton: {
+    padding: 8,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
   },
-  modeButtonActive: {
-    backgroundColor: '#6366F1',
-  },
-  modeButtonActiveSearch: {
-    backgroundColor: '#F59E0B',
+  activeButton: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
 }); 

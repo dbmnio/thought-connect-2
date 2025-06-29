@@ -12,9 +12,9 @@ export function ChatView({ messages, isLoading }: ChatViewProps) {
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
   }, [messages]);
 
   return (
@@ -48,10 +48,11 @@ export function ChatView({ messages, isLoading }: ChatViewProps) {
 const styles = StyleSheet.create({
   messagesContainer: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   messagesContent: {
-    padding: 16,
-    paddingBottom: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   messageContainer: {
     marginBottom: 16,
@@ -80,13 +81,15 @@ const styles = StyleSheet.create({
   typingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 8, // To match text bubble height roughly
+    justifyContent: 'center',
+    height: 22, // Matches text line height
   },
   typingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#9CA3AF',
+    marginHorizontal: 3,
+    // Add animation here in a real implementation
   },
 }); 

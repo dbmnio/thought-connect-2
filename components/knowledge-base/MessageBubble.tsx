@@ -12,16 +12,21 @@ function formatTime(date: Date) {
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
+  const isUser = message.isUser;
   return (
-    <View style={[styles.messageContainer, message.isUser ? styles.userMessage : styles.aiMessage]}>
+    <View style={[styles.messageContainer, isUser ? styles.userMessage : styles.aiMessage]}>
       <View style={styles.messageHeader}>
-        <View style={styles.messageAvatar}>
-          {message.isUser ? <User color="#FFFFFF" size={16} /> : <Bot color="#FFFFFF" size={16} />}
+        <View style={[styles.messageAvatar, isUser ? styles.userAvatar : styles.aiAvatar]}>
+          {isUser ? (
+            <User color="#FFFFFF" size={16} />
+          ) : (
+            <Bot color="#4B5563" size={16} />
+          )}
         </View>
         <Text style={styles.messageTime}>{formatTime(message.timestamp)}</Text>
       </View>
-      <View style={[styles.messageBubble, message.isUser ? styles.userBubble : styles.aiBubble]}>
-        <Text style={[styles.messageText, message.isUser ? styles.userText : styles.aiText]}>
+      <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
+        <Text style={[styles.messageText, isUser ? styles.userText : styles.aiText]}>
           {message.text}
         </Text>
       </View>
@@ -49,9 +54,14 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#6366F1',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  userAvatar: {
+    backgroundColor: '#6366F1',
+  },
+  aiAvatar: {
+    backgroundColor: '#E5E7EB',
   },
   messageTime: {
     fontSize: 12,

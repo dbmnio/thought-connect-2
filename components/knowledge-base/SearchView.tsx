@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { Search } from 'lucide-react-native';
-import { SearchResult } from '../../types/SearchResult';
-import { SearchResultCard } from './SearchResultCard';
+import { Thought } from '../thoughts/ThoughtCard';
+import { ThoughtCard } from '../thoughts/ThoughtCard';
 
 type SearchViewProps = {
   searchQuery: string;
-  searchResults: SearchResult[];
+  searchResults: Thought[];
   isLoading: boolean;
   error: string | null;
 };
@@ -61,7 +61,7 @@ export function SearchView({ searchQuery, searchResults, isLoading, error }: Sea
       )}
       <FlatList
         data={searchResults}
-        renderItem={({ item }) => <SearchResultCard item={item} />}
+        renderItem={({ item }) => <ThoughtCard thought={item} />}
         keyExtractor={(item) => item.id}
         style={styles.searchResultsList}
         contentContainerStyle={styles.searchResultsContent}
