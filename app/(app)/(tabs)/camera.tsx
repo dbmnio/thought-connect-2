@@ -86,7 +86,7 @@ export default function Camera() {
         if (photo) {
           router.push({
             pathname: '/(app)/photo-editor',
-            params: { uri: photo.uri },
+            params: { uri: photo.uri, width: photo.width, height: photo.height },
           });
         }
       }

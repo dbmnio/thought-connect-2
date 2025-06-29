@@ -1,6 +1,6 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Alert, Button, Image, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FileText, HelpCircle, MessageSquare, Undo2 } from 'lucide-react-native';
 import * as MediaLibrary from 'expo-media-library';
@@ -17,7 +17,8 @@ import {
   fitbox,
 } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useSharedValue } from 'react-native-reanimated';
+import { runOnJS, useSharedValue } from 'react-native-reanimated';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 const PALETTE_COLORS = ['#EF4444', '#F59E0B', '#84CC16', '#3B82F6', '#A855F7', '#FFFFFF'];
 
@@ -25,12 +26,19 @@ interface EditorToolbarProps {
   selectedColor: string;
   onColorChange: (color: string) => void;
   onUndo: () => void;
+  isLandscape: boolean;
 }
 
-function EditorToolbar({ selectedColor, onColorChange, onUndo }: EditorToolbarProps) {
+function EditorToolbar({ selectedColor, onColorChange, onUndo, isLandscape }: EditorToolbarProps) {
   return (
-    <View style={styles.toolbar}>
-      <View style={styles.colorPalette}>
+    <View style={[
+      styles.toolbar,
+      isLandscape && styles.toolbarLandscape
+    ]}>
+      <View style={[
+        styles.colorPalette,
+        isLandscape && styles.colorPaletteLandscape
+      ]}>
         {PALETTE_COLORS.map((color) => (
           <TouchableOpacity
             key={color}
@@ -90,7 +98,21 @@ export default function PhotoEditorScreen() {
   const router = useRouter();
   const { uri } = useLocalSearchParams<{ uri: string }>();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const isDeviceLandscape = windowWidth > windowHeight;
+
+  useFocusEffect(
+    useCallback(() => {
+      // Unlock orientation when the screen is focused
+      ScreenOrientation.unlockAsync();
+      
+      return () => {
+        // Lock orientation to portrait when the screen is unfocused
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      };
+    }, [])
+  );
+
   const [selectedType, setSelectedType] = useState<ThoughtType>('question');
   const [currentColor, setCurrentColor] = useState(PALETTE_COLORS[0]);
   const [paths, setPaths] = useState<{ path: any; color: string }[]>([]);
@@ -139,13 +161,11 @@ export default function PhotoEditorScreen() {
     }
 
     try {
-      // Temporarily clear the "live" path so it's not captured in the snapshot
       const lastLivePath = currentPath.value;
       currentPath.value = Skia.Path.Make();
 
       const image = await canvasRef.current?.makeImageSnapshot();
       
-      // Restore the live path
       currentPath.value = lastLivePath;
 
       if (!image) throw new Error('Failed to capture image');
@@ -175,10 +195,6 @@ export default function PhotoEditorScreen() {
     return null;
   }
   
-  const dst = rect(0, 0, 1080, 1920); // Example dimensions, adjust as needed
-  const src = rect(0, 0, skiaImage.width(), skiaImage.height());
-  const transform = fitbox('contain', src, dst);
-
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -188,7 +204,7 @@ export default function PhotoEditorScreen() {
       />
       <GestureDetector gesture={panGesture}>
         <Canvas style={styles.canvas} ref={canvasRef}>
-          <SkiaImage image={skiaImage} x={0} y={0} width={width} height={height} fit="cover" />
+          <SkiaImage image={skiaImage} x={0} y={0} width={windowWidth} height={windowHeight} fit="contain" />
           {paths.map((p, index) => (
             <Path
               key={index}
@@ -220,9 +236,16 @@ export default function PhotoEditorScreen() {
         selectedColor={currentColor}
         onColorChange={setCurrentColor}
         onUndo={handleUndo}
+        isLandscape={isDeviceLandscape}
       />
       
-      <View style={[styles.tabBar, { paddingBottom: insets.bottom > 0 ? insets.bottom : 24 }]}>
+      <View style={[
+        styles.tabBar, 
+        isDeviceLandscape && styles.tabBarLandscape,
+        isDeviceLandscape 
+          ? { paddingRight: insets.right > 0 ? insets.right : 12, paddingTop: insets.top, paddingBottom: insets.bottom }
+          : { paddingBottom: insets.bottom > 0 ? insets.bottom : 24 }
+      ]}>
         {typeOptions.map((option) => {
           const isActive = selectedType === option.type;
           return (
@@ -249,7 +272,7 @@ export default function PhotoEditorScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#000',
   },
   canvas: {
     flex: 1,
@@ -262,34 +285,61 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    zIndex: 10,
+    zIndex: 1,
   },
   toolbar: {
     position: 'absolute',
-    top: 80,
+    bottom: 120,
+    left: 20,
     right: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 24,
-    padding: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 20,
-    zIndex: 10,
+    zIndex: 1,
+  },
+  toolbarLandscape: {
+    flexDirection: 'column',
+    top: 0,
+    bottom: 0,
+    left: 20,
+    right: 'auto',
+    width: 48,
+    justifyContent: 'center',
   },
   colorPalette: {
-    gap: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 12,
+  },
+  colorPaletteLandscape: {
+    flexDirection: 'column',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    marginRight: 0,
+    marginBottom: 12,
   },
   colorButtonContainer: {
-    padding: 4,
-    borderRadius: 99,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
   },
   colorButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   undoButton: {
-    padding: 4,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 999,
+    padding: 8,
   },
   tabBar: {
     position: 'absolute',
@@ -297,24 +347,31 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     paddingTop: 12,
-    zIndex: 10,
+  },
+  tabBarLandscape: {
+    flexDirection: 'column',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    left: 'auto',
+    width: 100,
+    paddingTop: 0,
   },
   tabButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 8,
   },
   tabButtonContent: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
   },
   tabButtonText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
+    marginTop: 4,
   },
 });
