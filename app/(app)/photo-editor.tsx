@@ -21,6 +21,7 @@ import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useTeam } from '@/hooks/useTeam';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 const PALETTE_COLORS = ['#EF4444', '#F59E0B', '#84CC16', '#3B82F6', '#A855F7', '#FFFFFF'];
 
@@ -103,6 +104,7 @@ export default function PhotoEditorScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isDeviceLandscape = windowWidth > windowHeight;
   const { selectedTeams, allTeams } = useTeam();
+  const { user } = useAuth();
 
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -172,6 +174,11 @@ export default function PhotoEditorScreen() {
   const handleSaveAndProcess = async (thoughtType: ThoughtType) => {
     if (isProcessing) return;
     
+    if (!user) {
+      Alert.alert('Not Authenticated', 'You must be logged in to create a thought.');
+      return;
+    }
+
     if (!selectedTeams || selectedTeams.length === 0) {
       Alert.alert('No Team Selected', 'Please select a team before creating a thought.');
       return;
@@ -220,6 +227,9 @@ export default function PhotoEditorScreen() {
           type: thoughtType,
           image_url: publicUrl,
           team_id: teamId,
+          user_id: user.id,
+          title: 'New Thought',
+          description: '',
           embedding_status: 'pending'
         })
         .select('id')
