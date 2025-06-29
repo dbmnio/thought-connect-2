@@ -12,8 +12,6 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Camera as CameraIcon, RotateCcw, X } from 'lucide-react-native';
-import * as FileSystem from 'expo-file-system';
-import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
@@ -23,7 +21,6 @@ export default function Camera() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
-  const setCapturedImage = useThoughtStore((state) => state.setCapturedImage);
   const insets = useSafeAreaInsets();
   const [isCameraActive, setCameraActive] = useState(true);
 
@@ -74,11 +71,11 @@ export default function Camera() {
         });
 
         if (photo && photo.base64) {
-          setCapturedImage({
-            uri: `data:image/jpeg;base64,${photo.base64}`,
-            base64: photo.base64,
+          const uri = `data:image/jpeg;base64,${photo.base64}`;
+          router.push({
+            pathname: '/(app)/photo-editor',
+            params: { uri },
           });
-          router.push('/(app)/photo-editor');
         }
       } else {
         const photo = await cameraRef.current.takePictureAsync({
@@ -87,19 +84,10 @@ export default function Camera() {
         });
 
         if (photo) {
-          const photoDirectory = `${FileSystem.documentDirectory}photos/`;
-          const fileInfo = await FileSystem.getInfoAsync(photoDirectory);
-          if (!fileInfo.exists) {
-            await FileSystem.makeDirectoryAsync(photoDirectory, { intermediates: true });
-          }
-          const newImageUri = `${photoDirectory}${Date.now()}.jpg`;
-          await FileSystem.copyAsync({
-            from: photo.uri,
-            to: newImageUri,
+          router.push({
+            pathname: '/(app)/photo-editor',
+            params: { uri: photo.uri },
           });
-
-          setCapturedImage({ uri: newImageUri });
-          router.push('/(app)/photo-editor');
         }
       }
     } catch (error) {

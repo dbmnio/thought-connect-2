@@ -1,26 +1,8 @@
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Button, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Alert,
-  Platform,
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, CircleHelp as HelpCircle, MessageSquare, FileText, Users, ChevronDown } from 'lucide-react-native';
-import { useThoughtStore } from '@/lib/stores/useThoughtStore';
-import { useTeam } from '@/hooks/useTeam';
-import { useAuth } from '@/hooks/useAuth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { supabase } from '@/lib/supabase';
-import * as FileSystem from 'expo-file-system';
-import { decode } from 'base64-arraybuffer';
-
-const { width, height } = Dimensions.get('window');
+import { FileText, HelpCircle, MessageSquare } from 'lucide-react-native';
 
 type ThoughtType = 'question' | 'answer' | 'document';
 
@@ -52,163 +34,76 @@ const typeOptions: TypeOption[] = [
   },
 ];
 
-export default function PhotoEditor() {
+/**
+ * A screen for editing a photo before saving it as a thought.
+ * Allows drawing on the image and selecting a thought type.
+ */
+export default function PhotoEditorScreen() {
   const router = useRouter();
-  const { capturedImage, setCapturedImage } = useThoughtStore();
-  
-  const [loading, setLoading] = useState<ThoughtType | null>(null);
-  const { createThought } = useThoughtStore();
-  const { selectedTeams } = useTeam();
-  const { user } = useAuth();
+  const { uri } = useLocalSearchParams<{ uri: string }>();
   const insets = useSafeAreaInsets();
+  const [selectedType, setSelectedType] = useState<ThoughtType>('question');
 
   useEffect(() => {
-    // Cleanup captured image from store on unmount
-    return () => {
-      setCapturedImage(null);
-    };
-  }, []);
-
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(app)/(tabs)/camera');
+    if (!uri) {
+      // This should not happen in a normal flow as navigation to this
+      // screen requires a URI. We navigate back if it's possible.
+      if (router.canGoBack()) {
+        router.back();
+      }
     }
-  };
+  }, [uri, router]);
 
-  const handleTypeSelect = async (type: ThoughtType) => {
-    if (selectedTeams.length === 0) {
-      Alert.alert('No Team Selected', 'Please select at least one team before saving your thought.');
-      return;
-    }
-
-    setLoading(type);
-
-    try {
-      if (!capturedImage) {
-        throw new Error('No image provided.');
-      }
-
-      if (!user) {
-        throw new Error('User not authenticated.');
-      }
-
-      let fileBase64: string;
-      if (Platform.OS === 'web' && capturedImage.base64) {
-        fileBase64 = capturedImage.base64;
-      } else {
-        fileBase64 = await FileSystem.readAsStringAsync(capturedImage.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      }
-      
-      const filePath = `${user.id}/${new Date().toISOString()}.jpg`;
-      const contentType = 'image/jpeg';
-      
-      const { data, error: uploadError } = await supabase.storage
-        .from('thoughts-images')
-        .upload(filePath, decode(fileBase64), { contentType });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('thoughts-images')
-        .getPublicUrl(filePath);
-
-      // Generate a simple title based on type and timestamp
-      const timestamp = new Date().toLocaleString();
-      const title = `${type.charAt(0).toUpperCase() + type.slice(1)} - ${timestamp}`;
-      const description = `Captured ${type} from camera`;
-
-      await createThought(
-        {
-          type,
-          title,
-          description,
-          imageUrl: publicUrl,
-        },
-        user,
-        selectedTeams[0].id
-      );
-      
-      handleBack();
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save thought. Please try again.');
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const getDisplayText = () => {
-    if (selectedTeams.length === 0) return 'No Teams';
-    if (selectedTeams.length === 1) return selectedTeams[0].name;
-    if (selectedTeams.length === 2) return `${selectedTeams[0].name} + 1 more`;
-    return `${selectedTeams[0].name} + ${selectedTeams.length - 1} more`;
-  };
-  
-  if (!capturedImage) {
-    // This can happen if the user navigates here directly
-    // or if the state is lost. Redirect back to camera.
-    if (router.canGoBack()) router.back();
-    else router.replace('/(app)/(tabs)/camera');
-    return <View style={styles.container} />;
+  if (!uri) {
+    // Render nothing while we are about to navigate back.
+    return null;
   }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <ArrowLeft color="#FFFFFF" size={24} />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>Choose Type</Text>
-
-        {/* Team Display */}
-        <View style={styles.teamButton}>
-          <Users color="#6366F1" size={14} />
-          <Text style={styles.teamText} numberOfLines={1}>
-            {getDisplayText()}
-          </Text>
-          <ChevronDown color="#6366F1" size={12} />
-        </View>
-      </View>
-
-      {/* Full Screen Image */}
-      <View style={styles.imageContainer}>
-        <Image key={capturedImage.uri} source={{ uri: capturedImage.uri }} style={styles.image} />
-      </View>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTitle: 'Edit Photo',
+          headerLeft: () => (
+            <Button
+              onPress={() => {
+                router.back();
+              }}
+              title="Cancel"
+            />
+          ),
+          headerRight: () => (
+            <Button
+              onPress={() => {
+                // TODO: Implement saving logic with the edited image and selectedType
+                router.back();
+              }}
+              title="Done"
+            />
+          ),
+          headerStyle: {
+            backgroundColor: '#000',
+          },
+          headerTintColor: '#fff',
+        }}
+      />
+      <Image source={{ uri }} style={styles.image} resizeMode="contain" />
 
       {/* Tab-Style Type Selection Bar */}
-      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4 }]}>
+      <View style={[styles.tabBar, { paddingBottom: insets.bottom > 0 ? insets.bottom : 24 }]}>
         {typeOptions.map((option) => {
-          const IconComponent = option.icon;
-          const isLoading = loading === option.type;
-          const isActive = false; // No active state needed for this use case
-          
+          const isActive = selectedType === option.type;
           return (
             <TouchableOpacity
               key={option.type}
               style={styles.tabButton}
-              onPress={() => handleTypeSelect(option.type)}
-              disabled={loading !== null}
-              activeOpacity={0.7}
-            >
+              onPress={() => setSelectedType(option.type)}
+              activeOpacity={0.7}>
               <View style={styles.tabButtonContent}>
-                <IconComponent 
-                  color={isLoading ? '#9CA3AF' : option.color} 
-                  size={20} 
-                />
-                <Text 
-                  style={[
-                    styles.tabButtonText,
-                    { color: isLoading ? '#9CA3AF' : option.color }
-                  ]}
-                >
-                  {isLoading ? 'Saving...' : option.label}
+                <option.icon color={isActive ? option.color : '#9CA3AF'} size={24} />
+                <Text style={[styles.tabButtonText, { color: isActive ? option.color : '#9CA3AF' }]}>
+                  {option.label}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -222,83 +117,30 @@ export default function PhotoEditor() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
-  },
-  teamButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(248, 250, 252, 0.9)',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
-    maxWidth: 120,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  teamText: {
-    fontSize: 11,
-    fontFamily: 'Inter-Medium',
-    color: '#6366F1',
-    flex: 1,
-  },
-  imageContainer: {
-    flex: 1,
+    backgroundColor: 'black',
   },
   image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
+    flex: 1,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 4,
-    height: 60,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    paddingTop: 12,
   },
   tabButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 8,
   },
   tabButtonContent: {
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 4,
   },
   tabButtonText: {
     fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    marginTop: 4,
+    fontWeight: '500',
   },
 });
