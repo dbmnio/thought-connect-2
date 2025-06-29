@@ -25,25 +25,13 @@ export default function Camera() {
   const router = useRouter();
   const setCapturedImage = useThoughtStore((state) => state.setCapturedImage);
   const insets = useSafeAreaInsets();
+  const [isCameraActive, setCameraActive] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      // Resume camera preview when the screen is focused
-      const resumePreview = async () => {
-        if (cameraRef.current) {
-          await cameraRef.current.resumePreview();
-        }
-      };
-      resumePreview();
-
+      setCameraActive(true);
       return () => {
-        // Pause camera preview when the screen is unfocused
-        const pausePreview = async () => {
-          if (cameraRef.current) {
-            await cameraRef.current.pausePreview();
-          }
-        };
-        pausePreview();
+        setCameraActive(false);
       };
     }, [])
   );
@@ -134,7 +122,7 @@ export default function Camera() {
 
   return (
     <View style={styles.container}>
-      <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
+      {isCameraActive && <CameraView ref={cameraRef} style={styles.camera} facing={facing} />}
 
       {/* Header Controls */}
       <View style={[styles.headerControls, { paddingTop: insets.top + 20 }]}>
