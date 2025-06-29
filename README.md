@@ -143,3 +143,7 @@ thought-connect-2/
 ```
 
 This comprehensive structure ensures that the application is easy to navigate, maintain, and scale.
+
+## Planned Features
+
+- [ ] Support landscape mode in photo editor
