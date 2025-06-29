@@ -13,7 +13,7 @@ import { ProfileSection } from '@/components/profile/ProfileSection';
 import { TeamManagementSection } from '@/components/profile/TeamManagementSection';
 import { SettingsSection, SettingsOption } from '@/components/profile/SettingsSection';
 import { SignOutButton } from '@/components/profile/SignOutButton';
-import { Bell, Moon, Smartphone, Shield, HelpCircle, Globe, Settings } from 'lucide-react-native';
+import { Bell, Moon, Smartphone, Shield, HelpCircle, Globe, Settings, Camera } from 'lucide-react-native';
 
 export default function UserProfile() {
   const router = useRouter();
@@ -123,6 +123,13 @@ export default function UserProfile() {
       subtitle: 'Test OpenAI embedding generation',
       type: 'navigation' as const,
       onPress: () => router.push('/(app)/embedding-test'),
+    },
+    {
+      icon: Camera,
+      title: 'Developer: Camera Test',
+      subtitle: 'Isolated camera for debugging',
+      type: 'navigation' as const,
+      onPress: () => router.push('/(app)/camera-test'),
     },
   ];
 
