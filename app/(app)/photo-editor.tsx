@@ -17,7 +17,7 @@ import {
   fitbox,
 } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedProps, useSharedValue } from 'react-native-reanimated';
+import Animated, { runOnJS, useSharedValue } from 'react-native-reanimated';
 
 const PALETTE_COLORS = ['#EF4444', '#F59E0B', '#84CC16', '#3B82F6', '#A855F7', '#FFFFFF'];
 
@@ -82,8 +82,6 @@ const typeOptions: TypeOption[] = [
   },
 ];
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
 /**
  * A screen for editing a photo before saving it as a thought.
  * Allows drawing on the image and selecting a thought type.
@@ -96,23 +94,23 @@ export default function PhotoEditorScreen() {
   const [selectedType, setSelectedType] = useState<ThoughtType>('question');
   const [currentColor, setCurrentColor] = useState(PALETTE_COLORS[0]);
   const [paths, setPaths] = useState<{ path: any; color: string }[]>([]);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const currentPath = useSharedValue<any | null>(null);
+  const currentPath = useSharedValue(Skia.Path.Make());
+  const currentPathColor = useSharedValue(PALETTE_COLORS[0]);
 
   const canvasRef = useCanvasRef();
   const skiaImage = useImage(uri);
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
 
-  const addPath = useCallback((path: any) => {
-    setPaths(prev => [...prev, { path, color: currentColor }]);
-  }, [currentColor]);
+  const addPath = useCallback((path: any, color: string) => {
+    setPaths(prev => [...prev, { path, color }]);
+  }, []);
 
   const panGesture = Gesture.Pan()
     .onStart((g) => {
+      currentPathColor.value = currentColor;
       const newPath = Skia.Path.Make();
       newPath.moveTo(g.x, g.y);
       currentPath.value = newPath;
-      runOnJS(setIsDrawing)(true);
     })
     .onUpdate((g) => {
       if (currentPath.value) {
@@ -123,9 +121,8 @@ export default function PhotoEditorScreen() {
     })
     .onEnd(() => {
       if (currentPath.value) {
-        runOnJS(addPath)(currentPath.value);
+        runOnJS(addPath)(currentPath.value, currentPathColor.value);
       }
-      runOnJS(setIsDrawing)(false);
     });
 
   const handleUndo = () => {
@@ -144,7 +141,7 @@ export default function PhotoEditorScreen() {
     try {
       // Temporarily clear the "live" path so it's not captured in the snapshot
       const lastLivePath = currentPath.value;
-      currentPath.value = null;
+      currentPath.value = Skia.Path.Make();
 
       const image = await canvasRef.current?.makeImageSnapshot();
       
@@ -167,12 +164,6 @@ export default function PhotoEditorScreen() {
       Alert.alert('Error', 'Failed to save image.');
     }
   };
-
-  const animatedProps = useAnimatedProps(() => {
-    return {
-      path: currentPath.value || Skia.Path.Make(),
-    };
-  });
 
   useEffect(() => {
     if (!uri) {
@@ -209,17 +200,14 @@ export default function PhotoEditorScreen() {
               strokeJoin="round"
             />
           ))}
-          {isDrawing && (
-            <AnimatedPath
-              path={Skia.Path.Make()}
-              animatedProps={animatedProps}
-              color={currentColor}
-              style="stroke"
-              strokeWidth={5}
-              strokeCap="round"
-              strokeJoin="round"
-            />
-          )}
+          <Path
+            path={currentPath}
+            color={currentPathColor}
+            style="stroke"
+            strokeWidth={5}
+            strokeCap="round"
+            strokeJoin="round"
+          />
         </Canvas>
       </GestureDetector>
       
