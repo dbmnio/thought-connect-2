@@ -1,12 +1,6 @@
 # dependencies
 node_modules/
 
-# docs
-/_docs
-
-# cursor rules
-.cursor
-
 # expo
 .expo/
 dist/
