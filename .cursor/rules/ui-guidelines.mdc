@@ -1,0 +1,7 @@
+---
+description: Whenever implementing UI theme or layout, or implementing UI components
+globs: 
+alwaysApply: false
+---
+- Always think of the user experience, and how to communicate to the user next steps if an edge case arises, such as a network error.
+- Always refer to [ui-and-theme.md](mdc:ui-and-theme.md) for background in making decisions about how to implement UI theme, layout, components, or other features

@@ -1,0 +1,6 @@
+---
+description: Whenever a user action is needed on the supabase database (e.g. migrations)
+globs: 
+alwaysApply: false
+---
+Check if the action can be accomplished with the supabase mcp, and if yes, do so.

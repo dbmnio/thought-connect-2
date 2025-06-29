@@ -1,0 +1,6 @@
+---
+description: When installing more npm dependencies
+globs: 
+alwaysApply: false
+---
+This is a React-Native app that uses expo.  Instead of using "npm install {package}", use "npx expo install {package}" instead.
