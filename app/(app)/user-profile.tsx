@@ -117,21 +117,26 @@ export default function UserProfile() {
       type: 'navigation' as const,
       onPress: () => Alert.alert('Coming Soon', 'Language settings will be available soon'),
     },
-    {
-      icon: Settings,
-      title: 'Developer: Embedding Test',
-      subtitle: 'Test OpenAI embedding generation',
-      type: 'navigation' as const,
-      onPress: () => router.push('/(app)/embedding-test'),
-    },
-    {
-      icon: Camera,
-      title: 'Developer: Camera Test',
-      subtitle: 'Isolated camera for debugging',
-      type: 'navigation' as const,
-      onPress: () => router.push('/(app)/camera-test'),
-    },
   ];
+
+  if (process.env.NODE_ENV === 'development') {
+    settingsOptions.push(
+      {
+        icon: Settings,
+        title: 'Developer: Embedding Test',
+        subtitle: 'Test OpenAI embedding generation',
+        type: 'navigation' as const,
+        onPress: () => router.push('/(app)/embedding-test'),
+      },
+      {
+        icon: Camera,
+        title: 'Developer: Camera Test',
+        subtitle: 'Isolated camera for debugging',
+        type: 'navigation' as const,
+        onPress: () => router.push('/(app)/camera-test'),
+      }
+    );
+  }
 
   return (
     <View style={styles.container}>
