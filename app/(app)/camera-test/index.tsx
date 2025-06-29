@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 
 export default function CameraTest() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
+  const [isCameraActive, setCameraActive] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      setCameraActive(true);
+      return () => {
+        setCameraActive(false);
+      };
+    }, [])
+  );
 
   if (!permission) {
     // Camera permissions are still loading.
@@ -30,7 +40,7 @@ export default function CameraTest() {
 
   return (
     <View style={styles.container}>
-      <CameraView style={styles.camera} facing={facing} />
+      {isCameraActive && <CameraView style={styles.camera} facing={facing} />}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
           <Text style={styles.text}>Flip Camera</Text>
