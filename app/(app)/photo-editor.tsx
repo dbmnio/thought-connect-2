@@ -1,8 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Alert, Button, Image, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FileText, HelpCircle, MessageSquare, Undo2 } from 'lucide-react-native';
+import { ChevronLeft, FileText, HelpCircle, MessageSquare, Undo2, Users } from 'lucide-react-native';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
@@ -19,6 +19,8 @@ import {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { useTeam } from '@/hooks/useTeam';
+import { supabase } from '@/lib/supabase';
 
 const PALETTE_COLORS = ['#EF4444', '#F59E0B', '#84CC16', '#3B82F6', '#A855F7', '#FFFFFF'];
 
@@ -100,6 +102,9 @@ export default function PhotoEditorScreen() {
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isDeviceLandscape = windowWidth > windowHeight;
+  const { selectedTeams, allTeams } = useTeam();
+
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -151,37 +156,97 @@ export default function PhotoEditorScreen() {
     setPaths(prev => prev.slice(0, -1));
   };
 
-  const handleSave = async () => {
+  const getDisplayText = () => {
+    if (selectedTeams.length === allTeams.length && allTeams.length > 1) {
+      return 'All Teams';
+    }
+    if (selectedTeams.length === 1) {
+      return selectedTeams[0].name;
+    }
+    if (selectedTeams.length > 1) {
+      return 'Multiple Teams';
+    }
+    return 'Select a Team';
+  };
+
+  const handleSaveAndProcess = async (thoughtType: ThoughtType) => {
+    if (isProcessing) return;
+    
+    if (!selectedTeams || selectedTeams.length === 0) {
+      Alert.alert('No Team Selected', 'Please select a team before creating a thought.');
+      return;
+    }
+
+    setIsProcessing(true);
+
     if (!permissionResponse?.granted) {
       const permission = await requestPermission();
       if (!permission.granted) {
         Alert.alert('Permission required', 'We need permission to save photos to your device.');
+        setIsProcessing(false);
         return;
       }
     }
 
     try {
-      const lastLivePath = currentPath.value;
-      currentPath.value = Skia.Path.Make();
-
       const image = await canvasRef.current?.makeImageSnapshot();
-      
-      currentPath.value = lastLivePath;
-
       if (!image) throw new Error('Failed to capture image');
-      
+
       const bytes = image.encodeToBytes();
       if (!bytes) throw new Error('Failed to encode image to bytes.');
-      
-      const tempPath = `${FileSystem.cacheDirectory}${Date.now()}.png`;
-      await FileSystem.writeAsStringAsync(tempPath, Buffer.from(bytes).toString('base64'), { encoding: FileSystem.EncodingType.Base64 });
-      await MediaLibrary.saveToLibraryAsync(tempPath);
 
-      Alert.alert('Saved!', 'Your edited image has been saved to your photos.');
+      const imageData = Buffer.from(bytes).toString('base64');
+      const tempPath = `${FileSystem.cacheDirectory}${Date.now()}.png`;
+      await FileSystem.writeAsStringAsync(tempPath, imageData, { encoding: FileSystem.EncodingType.Base64 });
+
+      // 1. Upload image to Supabase Storage
+      const fileName = `${Date.now()}.png`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('thoughts-images')
+        .upload(fileName, Buffer.from(bytes), {
+          contentType: 'image/png',
+        });
+
+      if (uploadError) throw new Error(`Storage upload error: ${uploadError.message}`);
+      if (!uploadData) throw new Error('No data returned from storage upload');
+
+      const { data: { publicUrl } } = supabase.storage.from('thoughts-images').getPublicUrl(uploadData.path);
+
+      // 2. Create a new thought in the database
+      const teamId = selectedTeams[0].id; // For simplicity, use the first selected team
+      const { data: thoughtData, error: thoughtError } = await supabase
+        .from('thoughts')
+        .insert({
+          type: thoughtType,
+          image_url: publicUrl,
+          team_id: teamId,
+          embedding_status: 'pending'
+        })
+        .select('id')
+        .single();
+      
+      if (thoughtError) throw new Error(`Failed to create thought: ${thoughtError.message}`);
+      if (!thoughtData) throw new Error('Failed to create thought, no ID returned.');
+
+      // 3. Invoke the edge function to generate embedding
+      const { error: functionError } = await supabase.functions.invoke('generate-thought-embedding', {
+        body: { thought_id: thoughtData.id },
+      });
+
+      if (functionError) {
+        // Still navigate back, but log the error. The user can see the thought, it just won't be searchable yet.
+        // A background process could retry failed embeddings.
+        console.warn('Edge function invocation failed, but thought was saved.', functionError);
+      }
+      
       router.back();
+
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Failed to save image.');
+      const message = e instanceof Error ? e.message : 'An unknown error occurred.';
+      Alert.alert('Error', `Failed to save thought: ${message}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -202,6 +267,14 @@ export default function PhotoEditorScreen() {
           headerShown: false,
         }}
       />
+
+      {isProcessing && (
+        <View style={styles.processingOverlay}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.processingText}>Processing...</Text>
+        </View>
+      )}
+
       <GestureDetector gesture={panGesture}>
         <Canvas style={styles.canvas} ref={canvasRef}>
           <SkiaImage image={skiaImage} x={0} y={0} width={windowWidth} height={windowHeight} fit="contain" />
@@ -228,8 +301,15 @@ export default function PhotoEditorScreen() {
       </GestureDetector>
       
       <View style={[styles.header, { paddingTop: insets.top }]}>
-        <Button onPress={() => router.back()} title="Cancel" color="#fff" />
-        <Button onPress={handleSave} title="Done" color="#fff" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <ChevronLeft color="#FFFFFF" size={24} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/team-filter')} style={styles.teamButton}>
+          <Users color="#A7A7A7" size={14} />
+          <Text style={styles.teamText} numberOfLines={1}>
+            {getDisplayText()}
+          </Text>
+        </TouchableOpacity>
       </View>
       
       <EditorToolbar
@@ -247,20 +327,18 @@ export default function PhotoEditorScreen() {
           : { paddingBottom: insets.bottom > 0 ? insets.bottom : 24 }
       ]}>
         {typeOptions.map((option) => {
-          const isActive = selectedType === option.type;
           return (
             <TouchableOpacity
               key={option.type}
-              style={styles.tabButton}
-              onPress={() => setSelectedType(option.type)}
-              activeOpacity={0.7}
+              style={styles.tab}
+              onPress={() => {
+                setSelectedType(option.type);
+                handleSaveAndProcess(option.type);
+              }}
+              disabled={isProcessing}
             >
-              <View style={styles.tabButtonContent}>
-                <option.icon color={isActive ? option.color : '#9CA3AF'} size={24} />
-                <Text style={[styles.tabButtonText, { color: isActive ? option.color : '#9CA3AF' }]}>
-                  {option.label}
-                </Text>
-              </View>
+              <option.icon color={option.color} size={24} />
+              <Text style={[styles.tabLabel, { color: option.color }]}>{option.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -274,8 +352,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  processingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  processingText: {
+    color: '#FFFFFF',
+    marginTop: 12,
+    fontSize: 16,
+  },
   canvas: {
     flex: 1,
+    width: '100%',
+    height: '100%',
   },
   header: {
     position: 'absolute',
@@ -284,52 +376,58 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    zIndex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 90,
+  },
+  backButton: {
+    padding: 8,
+  },
+  teamButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 99,
+    maxWidth: '50%',
+  },
+  teamText: {
+    color: '#FFFFFF',
+    marginLeft: 6,
+    fontWeight: '600',
+    fontSize: 14,
   },
   toolbar: {
     position: 'absolute',
-    bottom: 120,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    right: 12,
+    top: 100,
+    bottom: 150,
     alignItems: 'center',
-    zIndex: 1,
+    justifyContent: 'center',
   },
   toolbarLandscape: {
-    flexDirection: 'column',
-    top: 0,
-    bottom: 0,
-    left: 20,
+    flexDirection: 'row',
+    top: 12,
     right: 'auto',
-    width: 48,
-    justifyContent: 'center',
+    left: '50%',
+    transform: [{ translateX: -150 }], // Adjust as needed
+    bottom: 'auto',
+    width: 300,
   },
   colorPalette: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 18,
+    padding: 6,
+    gap: 8,
   },
   colorPaletteLandscape: {
-    flexDirection: 'column',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginRight: 0,
-    marginBottom: 12,
+    flexDirection: 'row',
   },
   colorButtonContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    padding: 3,
+    borderRadius: 99,
     borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 4,
   },
   colorButton: {
     width: 24,
@@ -337,9 +435,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   undoButton: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 999,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     padding: 8,
+    borderRadius: 99,
+    marginTop: 12,
   },
   tabBar: {
     position: 'absolute',
@@ -348,28 +447,29 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     paddingTop: 12,
   },
   tabBarLandscape: {
     flexDirection: 'column',
-    top: 0,
-    bottom: 0,
-    right: 0,
     left: 'auto',
-    width: 100,
-    paddingTop: 0,
-  },
-  tabButton: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    right: 12,
+    top: 100,
+    bottom: 20,
+    justifyContent: 'space-around',
+    width: 90,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 18,
     paddingVertical: 8,
   },
-  tabButtonContent: {
+  tab: {
+    flex: 1,
     alignItems: 'center',
+    padding: 8,
+    borderRadius: 12,
   },
-  tabButtonText: {
+  tabLabel: {
     fontSize: 12,
     fontWeight: '600',
     marginTop: 4,
