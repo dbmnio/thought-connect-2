@@ -34,40 +34,10 @@ export async function askQuestion({
     });
 
     if (error) throw error;
-    if (!data.body) throw new Error('No response body from AI.');
+    if (!data || !data.answer) throw new Error('No answer from AI.');
 
-    const reader = data.body.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
+    onStreamUpdate(data.answer);
 
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-
-      if (value) {
-        const chunk = decoder.decode(value, { stream: true });
-        const eventMessages = chunk.split('\n\n').filter(Boolean);
-
-        for (const eventMessage of eventMessages) {
-          if (eventMessage.startsWith('data: ')) {
-            const data = eventMessage.substring(6);
-            if (data === '[DONE]') {
-              done = true;
-              break;
-            }
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices[0]?.delta?.content || '';
-              if (content) {
-                onStreamUpdate(content);
-              }
-            } catch (e) {
-              console.error('Error parsing stream data:', e);
-            }
-          }
-        }
-      }
-    }
   } catch (err) {
     console.error('Error asking question:', err);
     onError(err instanceof Error ? err : new Error('An unknown error occurred.'));

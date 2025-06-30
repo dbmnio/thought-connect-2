@@ -1,5 +1,8 @@
--- Ensure pgvector extension is enabled
+-- Create vector extension if not exists
 CREATE EXTENSION IF NOT EXISTS vector;
+
+-- drop the function
+DROP FUNCTION match_thoughts(vector,uuid[],double precision,integer)
 
 -- This function searches for thoughts based on a query embedding and team filters.
 -- It is designed to be called from a Supabase Edge Function.
@@ -16,6 +19,7 @@ RETURNS TABLE (
   type thought_type,
   title text,
   description text,
+  ai_description text,
   created_at timestamptz,
   author_full_name text,
   author_avatar_url text,

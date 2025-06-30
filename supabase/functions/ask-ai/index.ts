@@ -30,24 +30,28 @@ serve(async (req) => {
       input: question,
     });
     const query_embedding = embeddingResponse.data[0].embedding;
+    console.log(query_embedding);
 
     // 2. Retrieve relevant context from the database
-    const { data: documents, error } = await supabaseClient.rpc('search_thoughts', {
-      query_embedding,
-      match_threshold: 0.7,
-      match_count: 5,
+    const { data: documents, error } = await supabaseClient.rpc('match_thoughts', {
+      query_embedding: query_embedding,
       team_ids: teamIds,
+      match_threshold: 0,
+      match_count: 5,
     });
+    console.log(JSON.stringify(documents));
 
     if (error) throw error;
 
-    const contextText = documents.map((doc: any) => doc.content).join('\n---\n');
+    const contextText = documents
+      .map((doc: any) => `Title: ${doc.title}\nDescription: ${doc.ai_description || doc.description}`)
+      .join('\\n---\\n');
 
     // 3. Construct the prompt with retrieved context
     const prompt = `
       You are a helpful AI assistant for the ThoughtConnect app. 
       Answer the user's question based on the following context provided from their team's knowledge base.
-      Your answer should be concise and directly based on the provided context. If the context does not contain the answer, state that you couldn't find an answer in the knowledge base.
+      Your answer should be concise and directly based on the provided context. If the context does not contain the answer, state explicitly to the user first that you couldn't find an answer in the knowledge base, then given an answer from your own knowledge.
 
       Context:
       ${contextText}
@@ -55,16 +59,19 @@ serve(async (req) => {
       Question:
       ${question}
     `;
+    console.log(prompt);
 
-    // 4. Generate and stream the response
-    const stream = await openai.chat.completions.create({
+    // 4. Generate the response (non-streaming)
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
-      stream: true,
+      stream: false, // Explicitly set to false for clarity
     });
 
-    return new Response(stream, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+    const answer = completion.choices[0].message.content;
+
+    return new Response(JSON.stringify({ answer }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
