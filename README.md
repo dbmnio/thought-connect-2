@@ -2,6 +2,19 @@
 
 Thought Connect is a collaborative, AI-first mobile application designed to help teams capture, organize, and search for information seamlessly. It transforms unstructured data, like images and notes, into a structured, searchable knowledge base.
 
+# Quick Start (TL;DR)
+
+```bash
+git clone https://github.com/dbmnio/thought-connect-2
+cd thought-connect-2
+npm install -g expo-cli
+npx expo install
+npx expo start
+```
+
+For more details, see `Getting Started` below
+
+
 ## Overview
 
 In today's fast-paced environments, valuable information is often scattered across different formats and platforms. A photo of a whiteboard from a brainstorm, a quick note, or a question asked in passing can all contain critical knowledge. Thought Connect provides a central hub for this information, using AI to make it effortlessly discoverable.
